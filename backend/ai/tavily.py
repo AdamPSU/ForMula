@@ -1,59 +1,87 @@
-"""Tavily search/extract helpers for the hair-product pipeline."""
+"""Tavily research helpers for the hair-product pipeline."""
 
 from __future__ import annotations
 
-TAVILY_EXCLUDED_DOMAINS: list[str] = [
-    # --- Social media / UGC (no structured product data) ---
-    "tiktok.com",
-    "instagram.com",
-    "facebook.com",
-    "x.com",
-    "twitter.com",
-    "pinterest.com",
-    "threads.net",
-    "linkedin.com",
-    "tumblr.com",
-    "snapchat.com",
+from pathlib import Path
 
-    # --- Video / streaming (no extractable text) ---
-    "youtube.com",
-    "vimeo.com",
-    "twitch.tv",
-    "dailymotion.com",
+from tavily import AsyncTavilyClient
 
-    # --- Forums / Q&A (unstructured opinion, no price/ingredients) ---
-    "reddit.com",
-    "quora.com",
-    "stackexchange.com",
-    "answers.com",
-    "makeupalley.com",
+_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+_RESEARCH_QUERY_TEMPLATE = (_PROMPTS_DIR / "research_query.txt").read_text()
 
-    # --- Review aggregators (thin, often anti-scrape) ---
-    "yelp.com",
-    "trustpilot.com",
-    "sitejabber.com",
+PRODUCT_SCHEMA: dict = {
+    "properties": {
+        "candidates": {
+            "type": "array",
+            "description": "List of hair-care product candidates matching the user's profile",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Exact product name"},
+                    "brand": {"type": "string", "description": "Manufacturer or brand"},
+                    "url": {
+                        "type": "string",
+                        "description": "Direct URL to the page where ingredients were verified",
+                    },
+                    "ingredients": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Full INCI list in order, exactly as printed",
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "shampoo", "conditioner", "leave-in", "mask",
+                            "oil", "gel", "mousse", "cream", "serum", "other",
+                        ],
+                        "description": "Product category; must be one of the listed enum values",
+                    },
+                    "price": {
+                        "type": "string",
+                        "description": "Price with currency, e.g. '$24.00'",
+                    },
+                    "key_actives": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "3-5 hero ingredients the product markets",
+                    },
+                    "allergens": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Common allergens present (e.g. fragrance, essential oils, nuts, gluten)",
+                    },
+                },
+                "required": ["name", "brand", "url", "ingredients", "category"],
+            },
+        }
+    },
+    "required": ["candidates"],
+}
 
-    # --- Editorial magazines (list products, omit ingredients/price) ---
-    "cosmopolitan.com",
-    "elle.com",
-    "vogue.com",
-    "allure.com",
-    "byrdie.com",
-    "harpersbazaar.com",
-    "glamour.com",
-    "marieclaire.com",
-    "refinery29.com",
-    "buzzfeed.com",
 
-    # --- Blogging platforms (unstructured, low authority) ---
-    "medium.com",
-    "substack.com",
-    "wordpress.com",
-    "blogspot.com",
+_client: AsyncTavilyClient | None = None
 
-    # --- Low-quality aggregators / how-to mills ---
-    "wikihow.com",
-    "ehow.com",
-    "ebay.com",
-    "etsy.com",
-]
+
+def get_tavily_client() -> AsyncTavilyClient:
+    global _client
+    if _client is None:
+        _client = AsyncTavilyClient()
+    return _client
+
+
+def build_research_query(profile, prompt: str, count: int = 3) -> str:
+    if profile is None:
+        summary = "no structured hair profile available"
+    else:
+        parts = []
+        for attr in ("texture", "porosity", "density"):
+            v = getattr(profile, attr)
+            if v and v != "unknown":
+                parts.append(f"{attr}: {v}")
+        if profile.concerns:
+            parts.append(f"concerns: {', '.join(profile.concerns)}")
+        if profile.goals:
+            parts.append(f"goals: {', '.join(profile.goals)}")
+        summary = "; ".join(parts) if parts else "(no structured attributes parsed)"
+
+    return _RESEARCH_QUERY_TEMPLATE.format(summary=summary, prompt=prompt, count=count)

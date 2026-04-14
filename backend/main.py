@@ -15,25 +15,9 @@ app.add_middleware(
 )
 
 
-class ResearchResult(BaseModel):
-    title: str
-    snippet: str
-    url: str
-    source: str
-
-
 class ResearchResponse(BaseModel):
-    results: List[ResearchResult]
+    candidates: List[ProductCandidate]
     recommendation: str | None = None
-
-
-def _to_result(c: ProductCandidate) -> ResearchResult:
-    return ResearchResult(
-        title=f"{c.brand} {c.name}".strip(),
-        snippet=", ".join(c.ingredients) if c.ingredients else "",
-        url=c.url,
-        source=c.source_angle,
-    )
 
 
 @app.post("/research", response_model=ResearchResponse)
@@ -42,8 +26,7 @@ async def research(
     images: List[UploadFile] = File(default=[]),
 ):
     state = await run_orchestrator(prompt)
-    candidates = state.get("candidates", []) or []
     return ResearchResponse(
-        results=[_to_result(c) for c in candidates],
+        candidates=state.get("candidates", []) or [],
         recommendation=state.get("recommendation"),
     )

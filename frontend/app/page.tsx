@@ -9,35 +9,34 @@ interface UploadedImage {
   preview: string;
 }
 
-const MOCK_RESULTS = [
-  {
-    title: "Deep Research Foundations in Modern AI Systems",
-    snippet:
-      "Recent advances in retrieval-augmented generation have demonstrated that combining web search with large language models yields significantly more accurate and up-to-date responses. The Tavily search API provides structured, high-quality results optimized for AI applications.",
-    url: "https://arxiv.org/abs/2402.01680",
-    source: "arxiv.org",
-  },
-  {
-    title: "Tavily Search API: Optimized Retrieval for LLM Pipelines",
-    snippet:
-      "Tavily offers a purpose-built search API designed for AI agents and research workflows. Unlike generic search APIs, Tavily filters and ranks content for factual density, making it well-suited for deep research tasks where accuracy matters more than coverage.",
-    url: "https://docs.tavily.com/docs/overview",
-    source: "docs.tavily.com",
-  },
-  {
-    title: "Multimodal Research: Combining Text and Image Context",
-    snippet:
-      "Incorporating images alongside textual prompts enables richer research grounding. Vision-language models can extract relevant concepts from uploaded images to guide search query formulation, improving recall on domain-specific research tasks.",
-    url: "https://openreview.net/forum?id=multimodal-rag-2024",
-    source: "openreview.net",
-  },
-];
+interface ProductCandidate {
+  name: string;
+  brand: string;
+  url: string;
+  ingredients: string[];
+  category: string;
+  price: string | null;
+  key_actives: string[];
+  allergens: string[];
+  queried_at: string;
+}
+
+interface ResearchResponse {
+  candidates: ProductCandidate[];
+  recommendation: string | null;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
   const [prompt, setPrompt] = useState("");
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [results, setResults] = useState<ProductCandidate[]>([]);
+  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addImages = useCallback((files: FileList | File[]) => {
@@ -72,16 +71,36 @@ export default function Home() {
     });
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!prompt.trim()) return;
     setState("loading");
-    setTimeout(() => setState("results"), 2800);
-  }, [prompt]);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("prompt", prompt);
+      images.forEach((img) => form.append("images", img.file));
+      const res = await fetch(`${API_URL}/research`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: ResearchResponse = await res.json();
+      setResults(data.candidates);
+      setRecommendation(data.recommendation);
+      setState("results");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Request failed");
+      setState("idle");
+    }
+  }, [prompt, images]);
 
   const handleReset = useCallback(() => {
     images.forEach((img) => URL.revokeObjectURL(img.preview));
     setImages([]);
     setPrompt("");
+    setResults([]);
+    setRecommendation(null);
+    setError(null);
     setState("idle");
   }, [images]);
 
@@ -179,7 +198,7 @@ export default function Home() {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe what you want to investigate…"
+                placeholder="Describe your hair and what you're looking for…"
                 rows={4}
                 style={{
                   width: "100%",
@@ -306,6 +325,19 @@ export default function Home() {
                 )}
               </div>
 
+              {error && (
+                <p
+                  style={{
+                    marginTop: "1rem",
+                    fontSize: "0.8125rem",
+                    color: "#b54040",
+                    fontFamily: "var(--font-geist-mono), monospace",
+                  }}
+                >
+                  {error}
+                </p>
+              )}
+
               {/* Submit */}
               <button
                 onClick={handleSubmit}
@@ -388,7 +420,7 @@ export default function Home() {
                     maxWidth: "320px",
                   }}
                 >
-                  Searching the web and synthesizing sources
+                  Sourcing products with verified ingredient lists
                 </p>
               </div>
             </div>
@@ -442,6 +474,18 @@ export default function Home() {
                     ))}
                   </div>
                 )}
+                {recommendation && (
+                  <p
+                    style={{
+                      marginTop: "1rem",
+                      fontSize: "0.875rem",
+                      color: "rgba(26,26,24,0.6)",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {recommendation}
+                  </p>
+                )}
               </div>
 
               <div
@@ -454,67 +498,166 @@ export default function Home() {
 
               {/* Result cards */}
               <div className="flex flex-col gap-6">
-                {MOCK_RESULTS.map((result, i) => (
-                  <div
-                    key={i}
-                    className="card-enter"
+                {results.length === 0 && (
+                  <p
                     style={{
-                      animationDelay: `${i * 0.1}s`,
-                      paddingBottom: "1.5rem",
-                      borderBottom:
-                        i < MOCK_RESULTS.length - 1
-                          ? "1px solid rgba(26,26,24,0.07)"
-                          : "none",
+                      fontSize: "0.875rem",
+                      color: "rgba(26,26,24,0.5)",
+                      fontFamily: "var(--font-geist-mono), monospace",
                     }}
                   >
-                    <h3
+                    No products matched your criteria.
+                  </p>
+                )}
+                {results.map((p, i) => {
+                  const hostname = (() => {
+                    try {
+                      return new URL(p.url).hostname.replace(/^www\./, "");
+                    } catch {
+                      return p.url;
+                    }
+                  })();
+                  return (
+                    <div
+                      key={i}
+                      className="card-enter"
                       style={{
-                        fontFamily: "'Instrument Serif', Georgia, serif",
-                        fontSize: "1.125rem",
-                        lineHeight: 1.4,
-                        letterSpacing: "-0.01em",
-                        margin: "0 0 0.5rem",
-                        color: "#1A1A18",
+                        animationDelay: `${i * 0.1}s`,
+                        paddingBottom: "1.5rem",
+                        borderBottom:
+                          i < results.length - 1
+                            ? "1px solid rgba(26,26,24,0.07)"
+                            : "none",
                       }}
                     >
-                      {result.title}
-                    </h3>
-                    <p
-                      style={{
-                        fontSize: "0.9rem",
-                        lineHeight: 1.65,
-                        color: "rgba(26,26,24,0.65)",
-                        margin: "0 0 0.625rem",
-                      }}
-                    >
-                      {result.snippet}
-                    </p>
-                    <a
-                      href={result.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        fontSize: "0.75rem",
-                        fontFamily: "var(--font-geist-mono), monospace",
-                        color: "rgba(26,26,24,0.4)",
-                        textDecoration: "none",
-                        borderBottom: "1px solid rgba(26,26,24,0.15)",
-                        paddingBottom: "1px",
-                        transition: "color 0.15s",
-                      }}
-                      onMouseOver={(e) =>
-                        ((e.currentTarget as HTMLAnchorElement).style.color =
-                          "#1A1A18")
-                      }
-                      onMouseOut={(e) =>
-                        ((e.currentTarget as HTMLAnchorElement).style.color =
-                          "rgba(26,26,24,0.4)")
-                      }
-                    >
-                      {result.source}
-                    </a>
-                  </div>
-                ))}
+                      {/* brand + category + price row */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          fontSize: "0.7rem",
+                          fontFamily: "var(--font-geist-mono), monospace",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                          color: "rgba(26,26,24,0.5)",
+                          marginBottom: "0.375rem",
+                        }}
+                      >
+                        <span>{p.brand}</span>
+                        <span>·</span>
+                        <span>{p.category}</span>
+                        {p.price && (
+                          <>
+                            <span>·</span>
+                            <span>{p.price}</span>
+                          </>
+                        )}
+                      </div>
+
+                      <h3
+                        style={{
+                          fontFamily: "'Instrument Serif', Georgia, serif",
+                          fontSize: "1.25rem",
+                          lineHeight: 1.3,
+                          letterSpacing: "-0.01em",
+                          margin: "0 0 0.625rem",
+                          color: "#1A1A18",
+                        }}
+                      >
+                        {p.name}
+                      </h3>
+
+                      {p.key_actives.length > 0 && (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "0.375rem",
+                            marginBottom: "0.75rem",
+                          }}
+                        >
+                          {p.key_actives.map((a, j) => (
+                            <span
+                              key={j}
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "0.2rem 0.5rem",
+                                borderRadius: "999px",
+                                background: "rgba(26,26,24,0.06)",
+                                color: "rgba(26,26,24,0.75)",
+                              }}
+                            >
+                              {a}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <details style={{ marginBottom: "0.625rem" }}>
+                        <summary
+                          style={{
+                            fontSize: "0.75rem",
+                            fontFamily: "var(--font-geist-mono), monospace",
+                            color: "rgba(26,26,24,0.5)",
+                            cursor: "pointer",
+                            letterSpacing: "0.04em",
+                          }}
+                        >
+                          Ingredients ({p.ingredients.length})
+                        </summary>
+                        <p
+                          style={{
+                            fontSize: "0.8125rem",
+                            lineHeight: 1.6,
+                            color: "rgba(26,26,24,0.65)",
+                            margin: "0.5rem 0 0",
+                          }}
+                        >
+                          {p.ingredients.join(", ")}
+                        </p>
+                      </details>
+
+                      {p.allergens.length > 0 && (
+                        <p
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "rgba(26,26,24,0.5)",
+                            fontFamily: "var(--font-geist-mono), monospace",
+                            margin: "0 0 0.625rem",
+                          }}
+                        >
+                          Allergens: {p.allergens.join(", ")}
+                        </p>
+                      )}
+
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: "0.75rem",
+                          fontFamily: "var(--font-geist-mono), monospace",
+                          color: "rgba(26,26,24,0.4)",
+                          textDecoration: "none",
+                          borderBottom: "1px solid rgba(26,26,24,0.15)",
+                          paddingBottom: "1px",
+                          transition: "color 0.15s",
+                        }}
+                        onMouseOver={(e) =>
+                          ((e.currentTarget as HTMLAnchorElement).style.color =
+                            "#1A1A18")
+                        }
+                        onMouseOut={(e) =>
+                          ((e.currentTarget as HTMLAnchorElement).style.color =
+                            "rgba(26,26,24,0.4)")
+                        }
+                      >
+                        {hostname}
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Start over */}
