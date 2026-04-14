@@ -38,13 +38,35 @@ Category = Literal[
 ]
 
 
+HairType = Literal[
+    "straight", "1A", "1B", "1C",
+    "wavy", "2A", "2B", "2C",
+    "curly", "3A", "3B", "3C",
+    "coily", "4A", "4B", "4C",
+    "unknown",
+]
+
+
 class HairProfile(BaseModel):
-    texture: Literal["straight", "wavy", "curly", "coily", "unknown"] = "unknown"
+    type: HairType = "unknown"
     porosity: Literal["low", "medium", "high", "unknown"] = "unknown"
     density: Literal["thin", "medium", "thick", "unknown"] = "unknown"
     concerns: list[str] = Field(default_factory=list)
     goals: list[str] = Field(default_factory=list)
     free_text: str = ""
+
+    def is_informative(self) -> bool:
+        return (
+            self.type != "unknown"
+            or self.porosity != "unknown"
+            or self.density != "unknown"
+            or bool(self.concerns)
+            or bool(self.goals)
+        )
+
+
+class ProfileParseError(RuntimeError):
+    """Raised when the hair profile cannot be extracted after retries."""
 
 
 class ProductCandidate(BaseModel):
@@ -75,13 +97,24 @@ _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 _PROFILE_PROMPT = (_PROMPTS_DIR / "parse_profile.txt").read_text().strip()
 
 
+PROFILE_PARSE_ATTEMPTS = 3
+
+
 async def parse_profile(state: OrchestratorState) -> dict:
     structured = _fast_llm.with_structured_output(HairProfile)
-    async with _grok_sem:
-        profile = await structured.ainvoke(
-            [("system", _PROFILE_PROMPT), ("user", state["prompt"])]
-        )
-    return {"profile": profile}
+    messages = [("system", _PROFILE_PROMPT), ("user", state["prompt"])]
+    last_exc: Exception | None = None
+    for _ in range(PROFILE_PARSE_ATTEMPTS):
+        try:
+            async with _grok_sem:
+                profile = await structured.ainvoke(messages)
+            if profile.is_informative():
+                return {"profile": profile}
+        except Exception as e:
+            last_exc = e
+    raise ProfileParseError(
+        "Could not extract a hair profile from the prompt"
+    ) from last_exc
 
 
 async def research_products(state: OrchestratorState) -> dict:

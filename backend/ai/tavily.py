@@ -69,19 +69,24 @@ def get_tavily_client() -> AsyncTavilyClient:
     return _client
 
 
+_PROFILE_SKIP_FIELDS = {"free_text"}
+_SENTINEL_VALUES = {"unknown", "", None}
+
+
 def build_research_query(profile, prompt: str, count: int = 3) -> str:
     if profile is None:
-        summary = "no structured hair profile available"
-    else:
-        parts = []
-        for attr in ("texture", "porosity", "density"):
-            v = getattr(profile, attr)
-            if v and v != "unknown":
-                parts.append(f"{attr}: {v}")
-        if profile.concerns:
-            parts.append(f"concerns: {', '.join(profile.concerns)}")
-        if profile.goals:
-            parts.append(f"goals: {', '.join(profile.goals)}")
-        summary = "; ".join(parts) if parts else "(no structured attributes parsed)"
+        raise ValueError("build_research_query requires a parsed HairProfile")
 
+    parts: list[str] = []
+    for key, value in profile.model_dump().items():
+        if key in _PROFILE_SKIP_FIELDS:
+            continue
+        if isinstance(value, list):
+            if not value:
+                continue
+            parts.append(f"{key}: {', '.join(value)}")
+        elif value not in _SENTINEL_VALUES:
+            parts.append(f"{key}: {value}")
+
+    summary = "; ".join(parts)
     return _RESEARCH_QUERY_TEMPLATE.format(summary=summary, prompt=prompt, count=count)

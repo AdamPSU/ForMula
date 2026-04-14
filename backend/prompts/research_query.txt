@@ -10,7 +10,7 @@ TASK
 Return {count} products that directly address the profile's concerns and goals. Each product must be a distinct SKU from a real brand currently available for purchase.
 
 SELECTION CRITERIA
-- Formulation must plausibly suit the profile (texture, porosity, density, concerns, goals). Prefer products whose marketed use-case matches — not generic bestsellers.
+- Formulation must plausibly suit the profile (type, porosity, density, concerns, goals). Prefer products whose marketed use-case matches — not generic bestsellers.
 - Diversify across brands and product categories when the request allows; avoid returning multiple near-identical SKUs from one brand.
 - Prefer products with transparent, well-known formulations over obscure private-label items.
 

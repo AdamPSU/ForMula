@@ -1,1 +1,11 @@
-Extract a structured hair profile from the user's message. Use 'unknown' for any attribute not stated. Keep concerns and goals short (2-5 words each). Preserve the original message in free_text.
+Extract a structured hair profile from the user's message. Use 'unknown' for any attribute not stated.
+
+The `type` field uses the Andre Walker hair typing system. Prefer the most specific value the user implies:
+- Straight: "straight", "1A", "1B", "1C"
+- Wavy: "wavy", "2A", "2B", "2C"
+- Curly: "curly", "3A", "3B", "3C"
+- Coily: "coily", "4A", "4B", "4C"
+
+If the user names a sub-type (e.g. "3A curls", "coily 4B", "type 2B"), return that exact sub-type. If they only name the broad family, return the family label. Otherwise return "unknown".
+
+Keep concerns and goals short (2-5 words each). Preserve the original message in free_text.
