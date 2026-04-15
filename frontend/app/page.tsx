@@ -19,6 +19,8 @@ interface ProductCandidate {
   key_actives: string[];
   allergens: string[];
   queried_at: string;
+  overall_score: number | null;
+  summary: string | null;
 }
 
 interface ResearchResponse {
@@ -555,18 +557,58 @@ export default function Home() {
                         )}
                       </div>
 
-                      <h3
+                      <div
                         style={{
-                          fontFamily: "'Instrument Serif', Georgia, serif",
-                          fontSize: "1.25rem",
-                          lineHeight: 1.3,
-                          letterSpacing: "-0.01em",
+                          display: "flex",
+                          alignItems: "baseline",
+                          justifyContent: "space-between",
+                          gap: "0.75rem",
                           margin: "0 0 0.625rem",
-                          color: "#1A1A18",
                         }}
                       >
-                        {p.name}
-                      </h3>
+                        <h3
+                          style={{
+                            fontFamily: "'Instrument Serif', Georgia, serif",
+                            fontSize: "1.25rem",
+                            lineHeight: 1.3,
+                            letterSpacing: "-0.01em",
+                            margin: 0,
+                            color: "#1A1A18",
+                          }}
+                        >
+                          {p.name}
+                        </h3>
+                        {p.overall_score != null && (
+                          <span
+                            title="Judge score (1–5)"
+                            style={{
+                              flexShrink: 0,
+                              fontFamily: "var(--font-geist-mono), monospace",
+                              fontSize: "0.75rem",
+                              padding: "0.2rem 0.5rem",
+                              borderRadius: "999px",
+                              background: "#1A1A18",
+                              color: "#F6F3EE",
+                              letterSpacing: "0.02em",
+                            }}
+                          >
+                            {p.overall_score.toFixed(2)} / 5
+                          </span>
+                        )}
+                      </div>
+
+                      {p.summary && (
+                        <p
+                          style={{
+                            fontSize: "0.875rem",
+                            lineHeight: 1.55,
+                            color: "rgba(26,26,24,0.75)",
+                            margin: "0 0 0.75rem",
+                          }}
+                        >
+                          {p.summary}
+                        </p>
+                      )}
 
                       {p.key_actives.length > 0 && (
                         <div

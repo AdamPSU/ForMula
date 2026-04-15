@@ -41,3 +41,6 @@
 - Pinecone stores: product name, brand, ingredients, price, URL, source angle
 - `backend/main.py` is the FastAPI entrypoint; `POST /research` is the primary route
 - Frontend calls `POST /research` with `multipart/form-data` (`prompt` + optional `images[]`)
+
+## Lessons
+- **Judge prompts must never prime score distribution.** Do not tell the judge what score is "common" or "expected" — this biases the output and defeats blinded evaluation. Tighten via ingredient/profile logic only, not score-anchoring hints.

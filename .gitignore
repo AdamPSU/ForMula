@@ -59,3 +59,7 @@ logs/
 
 # Node (frontend)
 node_modules/
+
+# Experiment artifacts (backend)
+backend/experiments/cache/
+backend/experiments/results/
