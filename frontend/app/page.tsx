@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback, DragEvent, ChangeEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { API_URL, authedFetch, fetchProfile } from "./lib/api";
 
 type AppState = "idle" | "loading" | "results";
-
-interface UploadedImage {
-  file: File;
-  preview: string;
-}
 
 interface ProductCandidate {
   name: string;
@@ -20,58 +18,68 @@ interface ProductCandidate {
   allergens: string[];
   queried_at: string;
   overall_score: number | null;
+  panel_scores: Record<string, number> | null;
   summary: string | null;
 }
 
-interface ResearchResponse {
-  candidates: ProductCandidate[];
-  recommendation: string | null;
+interface ResearchStats {
+  searched: number;
+  shortlisted: number;
+  extracted: number;
+  judged: number;
 }
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+interface ResearchResponse {
+  session_id: string;
+  candidates: ProductCandidate[];
+  recommendation: string | null;
+  stats: ResearchStats;
+}
+
+function CloudBlob() {
+  return (
+    <svg
+      viewBox="0 0 260 160"
+      width="200"
+      height="123"
+      aria-hidden="true"
+      className="drop-shadow-[0_10px_40px_rgba(26,14,80,0.25)]"
+    >
+      <defs>
+        <linearGradient id="blobFill" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#9089fa" />
+          <stop offset="60%" stopColor="#4f47e8" />
+          <stop offset="100%" stopColor="#2f27a8" />
+        </linearGradient>
+      </defs>
+      <path
+        fill="url(#blobFill)"
+        d="M63 42 C 58 22, 92 6, 112 20 C 122 6, 152 4, 164 22 C 188 12, 216 28, 210 52 C 234 60, 236 96, 210 106 C 216 130, 186 146, 166 132 C 156 150, 124 152, 114 134 C 92 146, 62 136, 62 112 C 40 108, 34 78, 54 68 C 42 58, 46 42, 63 42 Z"
+      />
+      <ellipse cx="108" cy="56" rx="46" ry="14" fill="rgba(255,255,255,0.18)" />
+    </svg>
+  );
+}
 
 export default function Home() {
+  const router = useRouter();
   const [state, setState] = useState<AppState>("idle");
   const [prompt, setPrompt] = useState("");
-  const [images, setImages] = useState<UploadedImage[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
   const [results, setResults] = useState<ProductCandidate[]>([]);
   const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [stats, setStats] = useState<ResearchStats | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [gateChecked, setGateChecked] = useState(false);
 
-  const addImages = useCallback((files: FileList | File[]) => {
-    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    const newImages = arr.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    setImages((prev) => [...prev, ...newImages]);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setIsDragging(false);
-      if (e.dataTransfer.files.length) addImages(e.dataTransfer.files);
-    },
-    [addImages]
-  );
-
-  const handleFileChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files?.length) addImages(e.target.files);
-    },
-    [addImages]
-  );
-
-  const removeImage = useCallback((index: number) => {
-    setImages((prev) => {
-      URL.revokeObjectURL(prev[index].preview);
-      return prev.filter((_, i) => i !== index);
+  useEffect(() => {
+    fetchProfile().then((p) => {
+      if (p === null) {
+        router.replace("/onboarding");
+        return;
+      }
+      setGateChecked(true);
     });
-  }, []);
+  }, [router]);
 
   const handleSubmit = useCallback(async () => {
     if (!prompt.trim()) return;
@@ -80,8 +88,7 @@ export default function Home() {
     try {
       const form = new FormData();
       form.append("prompt", prompt);
-      images.forEach((img) => form.append("images", img.file));
-      const res = await fetch(`${API_URL}/research`, {
+      const res = await authedFetch(`${API_URL}/research`, {
         method: "POST",
         body: form,
       });
@@ -89,546 +96,246 @@ export default function Home() {
       const data: ResearchResponse = await res.json();
       setResults(data.candidates);
       setRecommendation(data.recommendation);
+      setStats(data.stats);
       setState("results");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Request failed");
+      const detail = err instanceof Error ? err.message : "unknown error";
+      setError(`research failed (${detail}). give it another try.`);
       setState("idle");
     }
-  }, [prompt, images]);
+  }, [prompt]);
 
   const handleReset = useCallback(() => {
-    images.forEach((img) => URL.revokeObjectURL(img.preview));
-    setImages([]);
     setPrompt("");
     setResults([]);
     setRecommendation(null);
+    setStats(null);
     setError(null);
     setState("idle");
-  }, [images]);
+  }, []);
+
+  if (!gateChecked) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center bg-primary text-on-primary">
+        <p className="font-mono text-[0.8125rem] text-on-surface-variant">Loading…</p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
-
-        .ring {
-          animation: spin 2s linear infinite;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        .pulse-text {
-          animation: fadePulse 2s ease-in-out infinite;
-        }
-        @keyframes fadePulse {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
-        }
-        .fade-in {
-          animation: fadeIn 0.4s ease forwards;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .card-enter {
-          opacity: 0;
-          animation: cardIn 0.4s ease forwards;
-        }
-        @keyframes cardIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
-      <div
-        className="min-h-screen flex flex-col"
-        style={{
-          background: "#F6F3EE",
-          color: "#1A1A18",
-          fontFamily: "var(--font-geist-sans), sans-serif",
-        }}
-      >
-        {/* Header */}
-        <header
-          className="px-8 py-5 flex items-center justify-between"
-          style={{ borderBottom: "1px solid rgba(26,26,24,0.08)" }}
+    <div className="h-[100dvh] flex flex-col bg-primary text-on-primary overflow-hidden">
+      <header className="shrink-0 px-8 py-2.5 flex items-center justify-between border-b border-outline-variant">
+        <span className="font-title italic text-[1.2rem] tracking-tight text-secondary-container" style={{ fontWeight: 900 }}>
+          formula.
+        </span>
+        <Link
+          href="/profile"
+          className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-on-surface-variant hover:text-secondary-container transition-colors"
         >
-          <span
-            style={{
-              fontFamily: "'Instrument Serif', Georgia, serif",
-              fontSize: "1.25rem",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            ForMula
-          </span>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              color: "rgba(26,26,24,0.4)",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              fontFamily: "var(--font-geist-mono), monospace",
-            }}
-          >
-            Research
-          </span>
-        </header>
+          Profile
+        </Link>
+      </header>
 
-        {/* Main */}
-        <main className="flex-1 flex flex-col items-center justify-center px-6 py-16">
-          {/* ── IDLE ── */}
-          {state === "idle" && (
-            <div className="w-full max-w-2xl fade-in">
-              <h1
-                style={{
-                  fontFamily: "'Instrument Serif', Georgia, serif",
-                  fontSize: "clamp(2rem, 5vw, 3rem)",
-                  lineHeight: 1.15,
-                  letterSpacing: "-0.02em",
-                  marginBottom: "2.5rem",
-                  color: "#1A1A18",
-                }}
+      <main className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 py-6">
+        {state === "idle" && (
+          <div className="w-full max-w-xl fade-in flex flex-col items-center">
+            <div className="mb-3">
+              <CloudBlob />
+            </div>
+            <h1
+              className="font-title italic text-secondary-container text-center leading-[0.9] tracking-[-0.02em] mb-6"
+              style={{ fontSize: "clamp(3rem, 8vw, 5rem)", fontWeight: 900 }}
+            >
+              formula.
+            </h1>
+
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="what are you trying to fix, grow, or tame?"
+              rows={4}
+              aria-label="Describe your hair and what you're looking for"
+              className="w-full resize-none bg-surface text-on-surface placeholder:text-white/50 px-5 py-4 text-[1rem] leading-relaxed rounded-[3px] border border-outline-variant focus:border-secondary-container transition-colors"
+            />
+
+            {error && (
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-3 font-mono text-[0.8125rem] text-error self-start"
               >
-                What would you like
-                <br />
-                <em>to research?</em>
-              </h1>
+                {error}
+              </p>
+            )}
 
-              {/* Textarea */}
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe your hair and what you're looking for…"
-                rows={4}
-                style={{
-                  width: "100%",
-                  background: "#FDFAF6",
-                  border: "1.5px solid rgba(26,26,24,0.12)",
-                  borderRadius: "10px",
-                  padding: "1rem 1.125rem",
-                  fontSize: "1rem",
-                  lineHeight: "1.6",
-                  color: "#1A1A18",
-                  resize: "none",
-                  outline: "none",
-                  fontFamily: "var(--font-geist-sans), sans-serif",
-                  boxSizing: "border-box",
-                  transition: "border-color 0.2s",
-                }}
-                onFocus={(e) =>
-                  (e.target.style.borderColor = "rgba(26,26,24,0.4)")
-                }
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "rgba(26,26,24,0.12)")
-                }
+            <button
+              onClick={handleSubmit}
+              disabled={!prompt.trim()}
+              className={`mt-6 w-full py-4 rounded-[3px] font-sans font-medium text-[0.92rem] uppercase tracking-[0.16em] transition duration-200 ${
+                prompt.trim()
+                  ? "bg-secondary-container text-on-secondary-container hover:brightness-[1.04] active:scale-[0.99] shadow-[0_8px_30px_rgba(242,254,139,0.28)]"
+                  : "bg-surface-container-high text-white/40 cursor-not-allowed"
+              }`}
+            >
+              find my match
+            </button>
+          </div>
+        )}
+
+        {state === "loading" && (
+          <div className="flex flex-col items-center gap-8 fade-in text-center">
+            <svg
+              className="ring-spin"
+              width="60"
+              height="60"
+              viewBox="0 0 60 60"
+              fill="none"
+            >
+              <circle
+                cx="30"
+                cy="30"
+                r="26"
+                stroke="rgba(255,255,255,0.18)"
+                strokeWidth="3"
               />
+              <path
+                d="M30 4 A26 26 0 0 1 56 30"
+                stroke="#F4F189"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+            <div>
+              <p
+                className="pulse-text font-serif italic font-semibold text-secondary-container mb-2"
+                style={{ fontSize: "1.75rem", letterSpacing: "-0.008em" }}
+              >
+                reading labels…
+              </p>
+              <p className="font-mono text-[0.8125rem] text-on-surface-variant max-w-[320px]">
+                pulling ingredient lists from the messy open web
+              </p>
+            </div>
+          </div>
+        )}
 
-              {/* Image drop zone */}
-              <div className="mt-4">
-                <div
-                  onDrop={handleDrop}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    border: `1.5px dashed ${
-                      isDragging
-                        ? "rgba(26,26,24,0.5)"
-                        : "rgba(26,26,24,0.18)"
-                    }`,
-                    borderRadius: "10px",
-                    padding: "1.125rem",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    background: isDragging
-                      ? "rgba(26,26,24,0.03)"
-                      : "transparent",
-                    textAlign: "center",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: "0.8125rem",
-                      color: "rgba(26,26,24,0.4)",
-                      margin: 0,
-                      fontFamily: "var(--font-geist-mono), monospace",
-                    }}
-                  >
-                    {isDragging
-                      ? "Drop images here"
-                      : "Attach images (optional) — drag & drop or click"}
-                  </p>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                  style={{ display: "none" }}
-                />
+        {state === "results" && (
+          <div className="w-full max-w-2xl h-full flex flex-col min-h-0">
+            <div className="fade-in mb-6 shrink-0">
+              <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-on-surface-variant mb-2">
+                you asked
+              </p>
+              <h2 className="font-serif italic font-semibold text-secondary-container text-[1.6rem] leading-[1.2] tracking-[-0.008em] m-0 break-words text-pretty">
+                {prompt}
+              </h2>
 
-                {images.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mt-3">
-                    {images.map((img, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          position: "relative",
-                          display: "inline-block",
-                        }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.preview}
-                          alt={img.file.name}
-                          style={{
-                            width: "72px",
-                            height: "72px",
-                            objectFit: "cover",
-                            borderRadius: "8px",
-                            border: "1.5px solid rgba(26,26,24,0.1)",
-                            display: "block",
-                          }}
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeImage(i);
-                          }}
-                          style={{
-                            position: "absolute",
-                            top: "-6px",
-                            right: "-6px",
-                            width: "18px",
-                            height: "18px",
-                            borderRadius: "50%",
-                            background: "#1A1A18",
-                            color: "#F6F3EE",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: "11px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            lineHeight: 1,
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {error && (
-                <p
-                  style={{
-                    marginTop: "1rem",
-                    fontSize: "0.8125rem",
-                    color: "#b54040",
-                    fontFamily: "var(--font-geist-mono), monospace",
-                  }}
-                >
-                  {error}
+              {stats && (
+                <p className="mt-4 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-on-surface-variant whitespace-nowrap overflow-x-auto">
+                  searched{" "}
+                  <span className="text-secondary-container">{stats.searched}</span>
+                  {" → "}
+                  shortlisted{" "}
+                  <span className="text-secondary-container">{stats.shortlisted}</span>
+                  {" → "}
+                  judged{" "}
+                  <span className="text-secondary-container">{stats.judged}</span>
+                  {" → "}
+                  top{" "}
+                  <span className="text-secondary-container">{results.length}</span>
                 </p>
               )}
 
-              {/* Submit */}
-              <button
-                onClick={handleSubmit}
-                disabled={!prompt.trim()}
-                style={{
-                  marginTop: "1.5rem",
-                  width: "100%",
-                  padding: "0.875rem",
-                  background: prompt.trim()
-                    ? "#1A1A18"
-                    : "rgba(26,26,24,0.1)",
-                  color: prompt.trim()
-                    ? "#F6F3EE"
-                    : "rgba(26,26,24,0.3)",
-                  border: "none",
-                  borderRadius: "10px",
-                  fontSize: "0.9375rem",
-                  fontWeight: 500,
-                  cursor: prompt.trim() ? "pointer" : "not-allowed",
-                  transition: "all 0.2s",
-                  fontFamily: "var(--font-geist-sans), sans-serif",
-                  letterSpacing: "0.01em",
-                }}
-              >
-                Research →
-              </button>
-            </div>
-          )}
-
-          {/* ── LOADING ── */}
-          {state === "loading" && (
-            <div
-              className="flex flex-col items-center gap-8 fade-in"
-              style={{ textAlign: "center" }}
-            >
-              <div
-                style={{ position: "relative", width: "56px", height: "56px" }}
-              >
-                <svg
-                  className="ring"
-                  width="56"
-                  height="56"
-                  viewBox="0 0 56 56"
-                  fill="none"
-                >
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    stroke="rgba(26,26,24,0.08)"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M28 4 A24 24 0 0 1 52 28"
-                    stroke="#1A1A18"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-
-              <div>
-                <p
-                  className="pulse-text"
-                  style={{
-                    fontFamily: "'Instrument Serif', Georgia, serif",
-                    fontSize: "1.5rem",
-                    letterSpacing: "-0.01em",
-                    margin: "0 0 0.5rem",
-                  }}
-                >
-                  Researching…
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.8125rem",
-                    color: "rgba(26,26,24,0.4)",
-                    fontFamily: "var(--font-geist-mono), monospace",
-                    margin: 0,
-                    maxWidth: "320px",
-                  }}
-                >
-                  Sourcing products with verified ingredient lists
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ── RESULTS ── */}
-          {state === "results" && (
-            <div className="w-full max-w-2xl">
-              {/* Query recap */}
-              <div className="fade-in" style={{ marginBottom: "2rem" }}>
-                <p
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "rgba(26,26,24,0.4)",
-                    fontFamily: "var(--font-geist-mono), monospace",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    marginBottom: "0.375rem",
-                    margin: "0 0 0.375rem",
-                  }}
-                >
-                  Query
-                </p>
-                <h2
-                  style={{
-                    fontFamily: "'Instrument Serif', Georgia, serif",
-                    fontSize: "1.625rem",
-                    lineHeight: 1.3,
-                    letterSpacing: "-0.01em",
-                    margin: 0,
-                  }}
-                >
-                  {prompt}
-                </h2>
-                {images.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {images.map((img, i) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={i}
-                        src={img.preview}
-                        alt=""
-                        style={{
-                          width: "40px",
-                          height: "40px",
-                          objectFit: "cover",
-                          borderRadius: "6px",
-                          border: "1px solid rgba(26,26,24,0.1)",
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                {recommendation && (
-                  <p
-                    style={{
-                      marginTop: "1rem",
-                      fontSize: "0.875rem",
-                      color: "rgba(26,26,24,0.6)",
-                      fontStyle: "italic",
-                    }}
-                  >
+              {recommendation && (
+                <div className="mt-6 rounded-[3px] bg-secondary-container/15 border border-secondary-container/30 px-7 py-6">
+                  <p className="font-serif italic text-secondary-container/80 text-[0.8rem] uppercase tracking-[0.08em] mb-2">
+                    if you want one answer
+                  </p>
+                  <p className="text-[0.925rem] leading-[1.55] text-secondary-container italic">
                     {recommendation}
                   </p>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
 
-              <div
-                style={{
-                  height: "1px",
-                  background: "rgba(26,26,24,0.1)",
-                  marginBottom: "2rem",
-                }}
-              />
+            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-5 pr-1">
+              {results.length === 0 && (
+                <p className="text-[0.925rem] leading-[1.55] text-on-surface">
+                  nothing clean enough came back. try loosening the ask.
+                </p>
+              )}
 
-              {/* Result cards */}
-              <div className="flex flex-col gap-6">
-                {results.length === 0 && (
-                  <p
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "rgba(26,26,24,0.5)",
-                      fontFamily: "var(--font-geist-mono), monospace",
-                    }}
+              {results.map((p, i) => {
+                const hostname = (() => {
+                  try {
+                    return new URL(p.url).hostname.replace(/^www\./, "");
+                  } catch {
+                    return p.url;
+                  }
+                })();
+                return (
+                  <div
+                    key={i}
+                    className="card-enter rounded-[3px] bg-surface-container px-6 py-5 border border-outline-variant"
+                    style={{ animationDelay: `${i * 0.08}s` }}
                   >
-                    No products matched your criteria.
-                  </p>
-                )}
-                {results.map((p, i) => {
-                  const hostname = (() => {
-                    try {
-                      return new URL(p.url).hostname.replace(/^www\./, "");
-                    } catch {
-                      return p.url;
-                    }
-                  })();
-                  return (
-                    <div
-                      key={i}
-                      className="card-enter"
-                      style={{
-                        animationDelay: `${i * 0.1}s`,
-                        paddingBottom: "1.5rem",
-                        borderBottom:
-                          i < results.length - 1
-                            ? "1px solid rgba(26,26,24,0.07)"
-                            : "none",
-                      }}
-                    >
-                      {/* brand + category + price row */}
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          fontSize: "0.7rem",
-                          fontFamily: "var(--font-geist-mono), monospace",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.06em",
-                          color: "rgba(26,26,24,0.5)",
-                          marginBottom: "0.375rem",
-                        }}
-                      >
-                        <span>{p.brand}</span>
-                        <span>·</span>
-                        <span>{p.category}</span>
-                        {p.price && (
-                          <>
-                            <span>·</span>
-                            <span>{p.price}</span>
-                          </>
-                        )}
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "baseline",
-                          justifyContent: "space-between",
-                          gap: "0.75rem",
-                          margin: "0 0 0.625rem",
-                        }}
-                      >
-                        <h3
-                          style={{
-                            fontFamily: "'Instrument Serif', Georgia, serif",
-                            fontSize: "1.25rem",
-                            lineHeight: 1.3,
-                            letterSpacing: "-0.01em",
-                            margin: 0,
-                            color: "#1A1A18",
-                          }}
-                        >
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-on-surface-variant mb-2">
+                          <span>{p.brand}</span>
+                          <span>·</span>
+                          <span>{p.category}</span>
+                          {p.price && (
+                            <>
+                              <span>·</span>
+                              <span>{p.price}</span>
+                            </>
+                          )}
+                        </div>
+                        <h3 className="font-serif italic font-semibold text-[1.35rem] leading-tight tracking-[-0.008em] text-secondary-container m-0 break-words text-pretty">
                           {p.name}
                         </h3>
-                        {p.overall_score != null && (
+                      </div>
+                      {p.overall_score != null && (
+                        <div className="shrink-0 flex flex-col items-end gap-1.5">
                           <span
-                            title="Judge score (1–5)"
-                            style={{
-                              flexShrink: 0,
-                              fontFamily: "var(--font-geist-mono), monospace",
-                              fontSize: "0.75rem",
-                              padding: "0.2rem 0.5rem",
-                              borderRadius: "999px",
-                              background: "#1A1A18",
-                              color: "#F6F3EE",
-                              letterSpacing: "0.02em",
-                            }}
+                            title="Panel-averaged score (1–5)"
+                            className="font-sans font-medium text-[0.78rem] px-3 py-1 rounded-[3px] bg-secondary-container text-on-secondary-container tracking-wide"
                           >
                             {p.overall_score.toFixed(2)} / 5
                           </span>
-                        )}
-                      </div>
+                          {p.panel_scores && (
+                            <div
+                              className="flex gap-1 font-mono text-[0.62rem] uppercase text-on-surface-variant"
+                              style={{ letterSpacing: "0.04em" }}
+                            >
+                              {Object.entries(p.panel_scores).map(([judge, score]) => (
+                                <span
+                                  key={judge}
+                                  title={`${judge} overall`}
+                                  className="px-1.5 py-0.5 rounded-[3px] border border-outline-variant"
+                                >
+                                  {judge} {score.toFixed(1)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
+                    <div className="mb-4">
                       {p.summary && (
-                        <p
-                          style={{
-                            fontSize: "0.875rem",
-                            lineHeight: 1.55,
-                            color: "rgba(26,26,24,0.75)",
-                            margin: "0 0 0.75rem",
-                          }}
-                        >
+                        <p className="text-[0.925rem] leading-[1.55] text-on-surface mb-2 break-words">
                           {p.summary}
                         </p>
                       )}
 
                       {p.key_actives.length > 0 && (
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "0.375rem",
-                            marginBottom: "0.75rem",
-                          }}
-                        >
+                        <div className="flex flex-wrap gap-1.5 mb-2">
                           {p.key_actives.map((a, j) => (
                             <span
                               key={j}
-                              style={{
-                                fontSize: "0.75rem",
-                                padding: "0.2rem 0.5rem",
-                                borderRadius: "999px",
-                                background: "rgba(26,26,24,0.06)",
-                                color: "rgba(26,26,24,0.75)",
-                              }}
+                              className="text-[0.78rem] px-2.5 py-1 rounded-[3px] bg-secondary-container/25 text-secondary-container"
                             >
                               {a}
                             </span>
@@ -636,102 +343,47 @@ export default function Home() {
                         </div>
                       )}
 
-                      <details style={{ marginBottom: "0.625rem" }}>
-                        <summary
-                          style={{
-                            fontSize: "0.75rem",
-                            fontFamily: "var(--font-geist-mono), monospace",
-                            color: "rgba(26,26,24,0.5)",
-                            cursor: "pointer",
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          Ingredients ({p.ingredients.length})
+                      {p.allergens.length > 0 && (
+                        <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-on-surface-variant break-words">
+                          <span className="text-secondary-container/75">watch for:</span>{" "}
+                          {p.allergens.join(", ")}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4">
+                      <details className="min-w-0 flex-1">
+                        <summary className="font-mono text-[0.72rem] uppercase tracking-[0.12em] text-on-surface-variant cursor-pointer">
+                          full ingredient list ({p.ingredients.length})
                         </summary>
-                        <p
-                          style={{
-                            fontSize: "0.8125rem",
-                            lineHeight: 1.6,
-                            color: "rgba(26,26,24,0.65)",
-                            margin: "0.5rem 0 0",
-                          }}
-                        >
+                        <p className="text-[0.78rem] leading-[1.55] text-on-surface mt-2 break-words">
                           {p.ingredients.join(", ")}
                         </p>
                       </details>
-
-                      {p.allergens.length > 0 && (
-                        <p
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "rgba(26,26,24,0.5)",
-                            fontFamily: "var(--font-geist-mono), monospace",
-                            margin: "0 0 0.625rem",
-                          }}
-                        >
-                          Allergens: {p.allergens.join(", ")}
-                        </p>
-                      )}
 
                       <a
                         href={p.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{
-                          fontSize: "0.75rem",
-                          fontFamily: "var(--font-geist-mono), monospace",
-                          color: "rgba(26,26,24,0.4)",
-                          textDecoration: "none",
-                          borderBottom: "1px solid rgba(26,26,24,0.15)",
-                          paddingBottom: "1px",
-                          transition: "color 0.15s",
-                        }}
-                        onMouseOver={(e) =>
-                          ((e.currentTarget as HTMLAnchorElement).style.color =
-                            "#1A1A18")
-                        }
-                        onMouseOut={(e) =>
-                          ((e.currentTarget as HTMLAnchorElement).style.color =
-                            "rgba(26,26,24,0.4)")
-                        }
+                        className="shrink-0 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-on-surface-variant hover:text-secondary-container border-b border-outline-variant hover:border-secondary-container/60 pb-px transition-colors"
                       >
                         {hostname}
                       </a>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Start over */}
-              <button
-                onClick={handleReset}
-                style={{
-                  marginTop: "2.5rem",
-                  padding: "0.625rem 1.25rem",
-                  background: "transparent",
-                  border: "1.5px solid rgba(26,26,24,0.2)",
-                  borderRadius: "8px",
-                  fontSize: "0.875rem",
-                  color: "rgba(26,26,24,0.55)",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-geist-sans), sans-serif",
-                  transition: "all 0.2s",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(26,26,24,0.5)";
-                  e.currentTarget.style.color = "#1A1A18";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(26,26,24,0.2)";
-                  e.currentTarget.style.color = "rgba(26,26,24,0.55)";
-                }}
-              >
-                ← Start over
-              </button>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </main>
-      </div>
-    </>
+
+            <button
+              onClick={handleReset}
+              className="shrink-0 self-start mt-4 px-6 py-2.5 rounded-[3px] bg-transparent border border-outline text-on-surface-variant hover:border-secondary-container hover:text-secondary-container text-[0.875rem] font-sans transition-colors"
+            >
+              ← ask something else
+            </button>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

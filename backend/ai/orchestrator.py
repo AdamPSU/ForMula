@@ -1,40 +1,45 @@
 """Multi-agent hair-product recommender orchestrator.
 
-Pipeline:
-    User prompt -> parse_profile -> research_products -> judge_candidates -> synthesize -> END
+Pipeline: search -> dedup (URL/content) -> extract (upsert to catalog) -> judge -> synthesize.
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
 from typing import Literal, TypedDict
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
 load_dotenv()
-from langchain_xai import ChatXAI
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field, field_validator
 
-from ai import cache
+from ai.auto_prompt import auto_prompt
 from ai.dedup import dedup_search_results
+from ai.embeddings import embed
 from ai.exa import (
     PER_PAGE_PRODUCT_SCHEMA,
     PER_PAGE_SUMMARY_QUERY,
     RESEARCH_SYSTEM_PROMPT,
     SEARCH_EXCLUDE_DOMAINS,
     SEARCH_HIGHLIGHTS_QUERY,
-    build_search_query,
     get_exa_client,
-    profile_to_summary,
 )
+from ai.judge import AxisVerdict, JudgeVerdict, panel_judge
+import db
 
 EST = ZoneInfo("America/New_York")
+SEARCH_TYPE = "deep-reasoning"
+SEARCH_BATCHES = 3
+ANGLES_PER_BATCH = 3
 RESEARCH_NUM_RESULTS = 100
+MAX_EXTRACT_URLS = 100
+TOP_K = 5
 
 Category = Literal[
     "shampoo",
@@ -49,51 +54,39 @@ Category = Literal[
     "other",
 ]
 
-
 HairType = Literal[
-    "straight", "1A", "1B", "1C",
-    "wavy", "2A", "2B", "2C",
-    "curly", "3A", "3B", "3C",
-    "coily", "4A", "4B", "4C",
-    "unknown",
+    "1A", "1B", "1C",
+    "2A", "2B", "2C",
+    "3A", "3B", "3C",
+    "4A", "4B", "4C",
 ]
+Density = Literal["thin", "medium", "thick"]
+StrandThickness = Literal["fine", "medium", "coarse"]
+ScalpCondition = Literal["oily", "dry", "flaky", "sensitive", "balanced"]
+ChemicalTreatment = Literal["bleach", "color", "relaxer", "keratin", "none"]
+ChemicalRecency = Literal["within_1mo", "1_3mo", "3_6mo", "6plus", "na"]
+HeatFrequency = Literal["daily", "weekly", "rare", "never"]
+ProductAbsorption = Literal["soaks", "sits", "greasy", "unsure"]
+WashFrequency = Literal["daily", "2_3_days", "weekly", "less"]
+Climate = Literal["humid", "dry", "cold", "mixed"]
+StylingTime = Literal["under_10", "10_30", "30plus"]
 
 
 class HairProfile(BaseModel):
-    type: HairType = "unknown"
-    porosity: Literal["low", "medium", "high", "unknown"] = "unknown"
-    density: Literal["thin", "medium", "thick", "unknown"] = "unknown"
+    type: HairType
+    density: Density
+    strand_thickness: StrandThickness
+    scalp_condition: ScalpCondition
+    chemical_history: list[ChemicalTreatment]
+    chemical_recency: ChemicalRecency
+    heat_frequency: HeatFrequency
     concerns: list[str] = Field(default_factory=list)
     goals: list[str] = Field(default_factory=list)
+    product_absorption: ProductAbsorption
+    wash_frequency: WashFrequency
+    climate: Climate
+    styling_time: StylingTime
     free_text: str = ""
-
-    def is_informative(self) -> bool:
-        return (
-            self.type != "unknown"
-            or self.porosity != "unknown"
-            or self.density != "unknown"
-            or bool(self.concerns)
-            or bool(self.goals)
-        )
-
-
-class ProfileParseError(RuntimeError):
-    """Raised when the hair profile cannot be extracted after retries."""
-
-
-class AxisVerdict(BaseModel):
-    rationale: str
-    evidence_tokens: list[str]
-    weaknesses: list[str]
-    sub_criteria: dict[str, bool]
-    score: int = Field(ge=1, le=5)
-
-
-class JudgeVerdict(BaseModel):
-    moisture_fit: AxisVerdict
-    scalp_safety: AxisVerdict
-    structural_fit: AxisVerdict
-    summary: str
 
 
 class ProductCandidate(BaseModel):
@@ -110,6 +103,7 @@ class ProductCandidate(BaseModel):
     scalp_safety: AxisVerdict | None = None
     structural_fit: AxisVerdict | None = None
     overall_score: float | None = None
+    panel_scores: dict[str, float] | None = None
     summary: str | None = None
 
     @field_validator("ingredients", mode="before")
@@ -139,94 +133,86 @@ class ProductCandidate(BaseModel):
         return v
 
 
+@dataclass
+class JudgedEntry:
+    candidate: ProductCandidate
+    product_id: UUID
+    verdicts: dict[str, JudgeVerdict]
+    rank: int | None = None
+
+    def to_session_product_input(self) -> db.SessionProductInput:
+        return db.SessionProductInput(
+            product_id=self.product_id,
+            rank=self.rank,
+            overall_score=self.candidate.overall_score or 0.0,
+            summary=self.candidate.summary or "",
+            queried_at=self.candidate.queried_at,
+            judges=[
+                db.JudgePanelInput(
+                    judge=jname,
+                    overall_score=_overall(v),
+                    summary=v.summary,
+                    axes=[
+                        _axis_input("moisture_fit", v.moisture_fit),
+                        _axis_input("scalp_safety", v.scalp_safety),
+                        _axis_input("structural_fit", v.structural_fit),
+                    ],
+                )
+                for jname, v in self.verdicts.items()
+            ],
+        )
+
+
+def _overall(v: JudgeVerdict) -> float:
+    return (v.moisture_fit.score + v.scalp_safety.score + v.structural_fit.score) / 3
+
+
+def _axis_input(axis: str, av: AxisVerdict) -> db.AxisVerdictInput:
+    return db.AxisVerdictInput(
+        axis=axis,
+        score=av.score,
+        rationale=av.rationale,
+        evidence_tokens=list(av.evidence_tokens),
+        weaknesses=list(av.weaknesses),
+        sub_criteria=dict(av.sub_criteria),
+    )
+
+
 class OrchestratorState(TypedDict, total=False):
     prompt: str
     profile: HairProfile | None
+    raw_results: list
+    survivors: list
+    first_person_account: str
+    angle_queries: list[str]
+    searched_count: int
+    shortlisted_count: int
+    extracted: list[tuple[ProductCandidate, UUID]]
+    extracted_count: int
+    judged: list[JudgedEntry]
     candidates: list[ProductCandidate]
+    judged_count: int
     recommendation: str | None
-    cache_hit: bool
 
 
-FAST_MODEL = "grok-4-1-fast-non-reasoning"
-REASONING_MODEL = "grok-4-1-fast-reasoning"
-
-_grok_sem = asyncio.Semaphore(32)
-_fast_llm = ChatXAI(model=FAST_MODEL)
-_reasoning_llm = ChatXAI(model=REASONING_MODEL, temperature=0.0)
-
-_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-_PROFILE_PROMPT = (_PROMPTS_DIR / "parse_profile.txt").read_text().strip()
-_JUDGE_PROMPT = (_PROMPTS_DIR / "judge.txt").read_text().strip()
-_ANGLE_PROMPT = (_PROMPTS_DIR / "angle_generation.txt").read_text().strip()
-
-
-class SearchAngles(BaseModel):
-    queries: list[str] = Field(min_length=9, max_length=9)
-
-
-async def _generate_angles(profile: HairProfile) -> list[str]:
-    structured = _fast_llm.with_structured_output(SearchAngles)
-    user = f"HAIR PROFILE\n{profile_to_summary(profile)}"
-    async with _grok_sem:
-        result = await structured.ainvoke(
-            [("system", _ANGLE_PROMPT), ("user", user)]
-        )
-    return result.queries
-
-_JUDGE_USER_TEMPLATE = """HAIR PROFILE
-{profile_summary}
-
-PRODUCT
-Category: {category}
-Ingredients (INCI, in order):
-{ingredients}"""
-
-
-PROFILE_PARSE_ATTEMPTS = 3
-
-
-async def parse_profile(state: OrchestratorState) -> dict:
-    structured = _fast_llm.with_structured_output(HairProfile)
-    messages = [("system", _PROFILE_PROMPT), ("user", state["prompt"])]
-    last_exc: Exception | None = None
-    for _ in range(PROFILE_PARSE_ATTEMPTS):
-        try:
-            async with _grok_sem:
-                profile = await structured.ainvoke(messages)
-            if profile.is_informative():
-                return {"profile": profile}
-        except Exception as e:
-            last_exc = e
-    raise ProfileParseError(
-        "Could not extract a hair profile from the prompt"
-    ) from last_exc
-
-
-SEARCH_TYPE = "deep-reasoning"
-
-
-async def research_products(state: OrchestratorState) -> dict:
-    query = build_search_query(state["profile"], state["prompt"])
+async def search(state: OrchestratorState) -> dict:
+    ap = await auto_prompt(state["profile"], state["prompt"])
     client = get_exa_client()
-
-    angles = await _generate_angles(state["profile"])
     search_kwargs = dict(
         type=SEARCH_TYPE,
         system_prompt=RESEARCH_SYSTEM_PROMPT,
         num_results=RESEARCH_NUM_RESULTS,
         exclude_domains=SEARCH_EXCLUDE_DOMAINS,
-        contents={
-            "highlights": {"query": SEARCH_HIGHLIGHTS_QUERY, "num_sentences": 3},
-        },
+        contents={"highlights": {"query": SEARCH_HIGHLIGHTS_QUERY, "num_sentences": 3}},
     )
     search_results = await asyncio.gather(
         *(
             client.search(
-                query=query,
-                additional_queries=angles[i * 3 : (i + 1) * 3],
+                query=ap.primary_query,
+                additional_queries=ap.angle_queries[i * ANGLES_PER_BATCH : (i + 1) * ANGLES_PER_BATCH],
                 **search_kwargs,
             )
-            for i in range(3)
+            for i in range(SEARCH_BATCHES)
         )
     )
     seen: set[str] = set()
@@ -236,24 +222,35 @@ async def research_products(state: OrchestratorState) -> dict:
             if r.highlights and r.url not in seen:
                 seen.add(r.url)
                 raw_results.append(r)
-    if not raw_results:
-        return {"candidates": []}
+    print(f"[search] {len(raw_results)} urls", flush=True)
+    return {
+        "raw_results": raw_results,
+        "searched_count": len(raw_results),
+        "first_person_account": ap.first_person_account,
+        "angle_queries": list(ap.angle_queries),
+    }
 
-    survivors = dedup_search_results(raw_results)
-    print(
-        f"[dedup] {len(survivors)}/{len(raw_results)} urls after semantic collapse",
-        flush=True,
-    )
-    urls = [r.url for r in survivors]
 
-    # Exa caps urls at 100 per /contents request.
-    contents_result = await client.get_contents(
-        urls[:100],
+async def dedup(state: OrchestratorState) -> dict:
+    raw = state.get("raw_results", [])
+    if not raw:
+        return {"survivors": [], "shortlisted_count": 0}
+    survivors = await asyncio.to_thread(dedup_search_results, raw)
+    print(f"[dedup] {len(survivors)}/{len(raw)} urls kept", flush=True)
+    return {"survivors": survivors, "shortlisted_count": len(survivors)}
+
+
+async def extract(state: OrchestratorState) -> dict:
+    survivors = state.get("survivors", [])[:MAX_EXTRACT_URLS]
+    if not survivors:
+        return {"extracted": [], "extracted_count": 0}
+    print(f"[extract] fetching contents for {len(survivors)} urls", flush=True)
+    contents_result = await get_exa_client().get_contents(
+        [r.url for r in survivors],
         summary={"query": PER_PAGE_SUMMARY_QUERY, "schema": PER_PAGE_PRODUCT_SCHEMA},
         max_age_hours=-1,
     )
-
-    candidates: list[ProductCandidate] = []
+    parsed: list[ProductCandidate] = []
     for r in contents_result.results:
         raw = r.summary
         if not raw:
@@ -271,136 +268,96 @@ async def research_products(state: OrchestratorState) -> dict:
         except Exception:
             continue
         if cand.name and cand.brand and cand.ingredients:
-            candidates.append(cand)
-    return {"candidates": candidates}
-
-
-JUDGE_ATTEMPTS = 2
-TOP_K = 5
-
-
-async def _judge_one(
-    candidate: ProductCandidate, profile_summary: str
-) -> JudgeVerdict | None:
-    structured = _reasoning_llm.with_structured_output(JudgeVerdict)
-    messages = [
-        ("system", _JUDGE_PROMPT),
-        (
-            "user",
-            _JUDGE_USER_TEMPLATE.format(
-                profile_summary=profile_summary,
-                category=candidate.category,
-                ingredients="\n".join(f"- {ing}" for ing in candidate.ingredients),
-            ),
-        ),
-    ]
-    for _ in range(JUDGE_ATTEMPTS):
-        try:
-            async with _grok_sem:
-                return await structured.ainvoke(messages)
-        except Exception:
+            parsed.append(cand)
+    # Cheap within-session dedup by (brand, name) before hitting the catalog.
+    seen_keys: set[tuple[str, str]] = set()
+    unique: list[ProductCandidate] = []
+    for c in parsed:
+        k = (c.brand.lower().strip(), c.name.lower().strip())
+        if k in seen_keys:
             continue
-    return None
+        seen_keys.add(k)
+        unique.append(c)
+    if not unique:
+        return {"extracted": [], "extracted_count": 0}
+    texts = [f"{c.brand} {c.name} {c.category}" for c in unique]
+    vectors = await asyncio.to_thread(embed, texts)
+    extracted: list[tuple[ProductCandidate, UUID]] = []
+    seen_ids: set[UUID] = set()
+    for cand, vec in zip(unique, vectors):
+        product_id, _created = await db.upsert_product(cand, vec)
+        if product_id in seen_ids:
+            continue
+        seen_ids.add(product_id)
+        extracted.append((cand, product_id))
+    print(f"[extract] {len(extracted)} unique catalog products", flush=True)
+    return {"extracted": extracted, "extracted_count": len(extracted)}
 
 
 async def judge_candidates(state: OrchestratorState) -> dict:
-    candidates = state.get("candidates", [])
-    if not candidates:
-        return {"candidates": []}
-    profile_summary = profile_to_summary(state["profile"])
-    verdicts = await asyncio.gather(
-        *(_judge_one(c, profile_summary) for c in candidates)
+    extracted = state.get("extracted", [])
+    if not extracted:
+        return {"judged": [], "candidates": [], "judged_count": 0}
+    fpa = state.get("first_person_account") or ""
+    panel_results = await asyncio.gather(
+        *(panel_judge(c.category, c.ingredients, fpa) for c, _ in extracted)
     )
-    judged: list[ProductCandidate] = []
-    for cand, verdict in zip(candidates, verdicts):
-        if verdict is None:
+    judged: list[JudgedEntry] = []
+    for (cand, product_id), verdicts in zip(extracted, panel_results):
+        if not verdicts:
             continue
-        overall = (
-            verdict.moisture_fit.score
-            + verdict.scalp_safety.score
-            + verdict.structural_fit.score
-        ) / 3
-        judged.append(
-            cand.model_copy(
-                update={
-                    "moisture_fit": verdict.moisture_fit,
-                    "scalp_safety": verdict.scalp_safety,
-                    "structural_fit": verdict.structural_fit,
-                    "overall_score": overall,
-                    "summary": verdict.summary,
-                }
-            )
-        )
-    judged.sort(key=lambda c: c.overall_score or 0.0, reverse=True)
-    return {"candidates": judged[:TOP_K]}
-
-
-async def synthesize(state: OrchestratorState) -> dict:
-    if state.get("recommendation") is not None:
-        return {}
-    candidates = state.get("candidates", [])
-    return {"recommendation": f"{len(candidates)} candidate(s) found."}
-
-
-async def cache_lookup(state: OrchestratorState) -> dict:
-    summary = profile_to_summary(state["profile"])
-    hit = cache.lookup(summary)
-    if hit is None:
-        print("[cache] miss", flush=True)
-        return {"cache_hit": False}
-    print(f"[cache] hit ({len(hit['candidates'])} candidates)", flush=True)
+        narrative = verdicts.get("grok") or next(iter(verdicts.values()))
+        panel_scores = {j: _overall(v) for j, v in verdicts.items()}
+        overall = sum(panel_scores.values()) / len(panel_scores)
+        enriched = cand.model_copy(update={
+            "moisture_fit": narrative.moisture_fit,
+            "scalp_safety": narrative.scalp_safety,
+            "structural_fit": narrative.structural_fit,
+            "overall_score": overall,
+            "panel_scores": panel_scores,
+            "summary": narrative.summary,
+        })
+        judged.append(JudgedEntry(candidate=enriched, product_id=product_id, verdicts=verdicts))
+    judged.sort(key=lambda j: j.candidate.overall_score or 0.0, reverse=True)
+    for i, j in enumerate(judged):
+        j.rank = i + 1 if i < TOP_K else None
+    top = [j.candidate for j in judged if j.rank is not None]
+    print(f"[judge] top {len(top)} of {len(judged)} (panel averaged)", flush=True)
     return {
-        "cache_hit": True,
-        "candidates": [ProductCandidate(**c) for c in hit["candidates"]],
-        "recommendation": hit.get("recommendation"),
+        "judged": judged,
+        "candidates": top,
+        "judged_count": len(judged),
     }
 
 
-async def cache_upsert(state: OrchestratorState) -> dict:
-    summary = profile_to_summary(state["profile"])
-    cache.upsert(summary, state.get("candidates", []), state.get("recommendation"))
-    return {}
-
-
-def _route_after_cache(state: OrchestratorState) -> str:
-    return "synthesize" if state.get("cache_hit") else "research_products"
-
-
-def _route_after_synthesize(state: OrchestratorState) -> str:
-    return END if state.get("cache_hit") else "cache_upsert"
+async def synthesize(state: OrchestratorState) -> dict:
+    candidates = state.get("candidates", [])
+    print(f"[synthesize] writing recommendation for {len(candidates)} candidates", flush=True)
+    return {"recommendation": f"{len(candidates)} candidate(s) found."}
 
 
 def build_graph():
     g = StateGraph(OrchestratorState)
-    g.add_node("parse_profile", parse_profile)
-    g.add_node("cache_lookup", cache_lookup)
-    g.add_node("research_products", research_products)
+    g.add_node("search", search)
+    g.add_node("dedup", dedup)
+    g.add_node("extract", extract)
     g.add_node("judge_candidates", judge_candidates)
     g.add_node("synthesize", synthesize)
-    g.add_node("cache_upsert", cache_upsert)
-    g.add_edge(START, "parse_profile")
-    g.add_edge("parse_profile", "cache_lookup")
-    g.add_conditional_edges(
-        "cache_lookup",
-        _route_after_cache,
-        {"research_products": "research_products", "synthesize": "synthesize"},
-    )
-    g.add_edge("research_products", "judge_candidates")
+    g.add_edge(START, "search")
+    g.add_edge("search", "dedup")
+    g.add_edge("dedup", "extract")
+    g.add_edge("extract", "judge_candidates")
     g.add_edge("judge_candidates", "synthesize")
-    g.add_conditional_edges(
-        "synthesize",
-        _route_after_synthesize,
-        {"cache_upsert": "cache_upsert", END: END},
-    )
-    g.add_edge("cache_upsert", END)
+    g.add_edge("synthesize", END)
     return g.compile()
 
 
 _graph = None
 
 
-async def run(prompt: str) -> OrchestratorState:
+async def run(prompt: str, profile: HairProfile) -> OrchestratorState:
     global _graph
     if _graph is None:
         _graph = build_graph()
-    return await _graph.ainvoke({"prompt": prompt})
+    profile_with_prompt = profile.model_copy(update={"free_text": prompt})
+    return await _graph.ainvoke({"prompt": prompt, "profile": profile_with_prompt})

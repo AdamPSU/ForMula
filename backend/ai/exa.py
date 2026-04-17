@@ -8,7 +8,6 @@ from pathlib import Path
 from exa_py import AsyncExa
 
 _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-_RESEARCH_QUERY_TEMPLATE = (_PROMPTS_DIR / "research_query.txt").read_text()
 RESEARCH_SYSTEM_PROMPT = (_PROMPTS_DIR / "research_system_prompt.txt").read_text().strip()
 
 SEARCH_HIGHLIGHTS_QUERY = "ingredients list INCI"
@@ -36,6 +35,7 @@ SEARCH_EXCLUDE_DOMAINS = [
     "curlsmith.com",
     "orshaircare.com",
     "itsa10haircare.com",
+    "formunova.com",
 ]
 
 PER_PAGE_PRODUCT_SCHEMA: dict = {
@@ -118,28 +118,16 @@ def get_exa_client() -> AsyncExa:
 
 
 _PROFILE_SKIP_FIELDS = {"free_text"}
-_SENTINEL_VALUES = {"unknown", "", None}
 
 
 def profile_to_summary(profile) -> str:
-    if profile is None:
-        raise ValueError("profile_to_summary requires a parsed HairProfile")
-
     parts: list[str] = []
     for key, value in profile.model_dump().items():
         if key in _PROFILE_SKIP_FIELDS:
             continue
         if isinstance(value, list):
-            if not value:
-                continue
-            parts.append(f"{key}: {', '.join(value)}")
-        elif value not in _SENTINEL_VALUES:
+            if value:
+                parts.append(f"{key}: {', '.join(value)}")
+        else:
             parts.append(f"{key}: {value}")
-
     return "; ".join(parts)
-
-
-def build_search_query(profile, prompt: str) -> str:
-    return _RESEARCH_QUERY_TEMPLATE.format(
-        summary=profile_to_summary(profile), prompt=prompt
-    )

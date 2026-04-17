@@ -1,5 +1,0 @@
-HAIR PROFILE
-{summary}
-
-USER REQUEST
-{prompt}
