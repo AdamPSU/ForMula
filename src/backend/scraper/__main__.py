@@ -26,7 +26,12 @@ def _build_parser() -> argparse.ArgumentParser:
     cb.add_argument("--slug", required=True)
     cb.add_argument("--name", required=True)
     cb.add_argument("--website-url", required=True)
-    cb.add_argument("--seed-url", required=True)
+    cb.add_argument("--seed-url")
+
+    ub = s.add_parser("update-brand")
+    ub.add_argument("--brand-id", required=True)
+    ub.add_argument("--seed-url")
+    ub.add_argument("--active", choices=["true", "false"])
 
     csj = s.add_parser("create-scrape-job")
     csj.add_argument("--brand-id", required=True)
@@ -89,6 +94,9 @@ async def _dispatch(args: argparse.Namespace):
             return await catalog.create_brand(
                 args.slug, args.name, args.website_url, args.seed_url
             )
+        case "update-brand":
+            active = None if args.active is None else args.active == "true"
+            return await catalog.update_brand(args.brand_id, args.seed_url, active)
         case "create-scrape-job":
             return await catalog.create_scrape_job(args.brand_id)
         case "update-scrape-job":

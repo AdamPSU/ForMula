@@ -23,7 +23,12 @@ async def list_brands() -> list[dict]:
     ]
 
 
-async def create_brand(slug: str, name: str, website_url: str, seed_url: str) -> dict:
+async def create_brand(
+    slug: str,
+    name: str,
+    website_url: str,
+    seed_url: Optional[str] = None,
+) -> dict:
     async with connection() as conn:
         row = await conn.fetchrow(
             """insert into brands (slug, name, website_url, seed_url)
@@ -35,6 +40,24 @@ async def create_brand(slug: str, name: str, website_url: str, seed_url: str) ->
             seed_url,
         )
     return {"brand_id": str(row["id"])}
+
+
+async def update_brand(
+    brand_id: str,
+    seed_url: Optional[str] = None,
+    active: Optional[bool] = None,
+) -> dict:
+    async with connection() as conn:
+        await conn.execute(
+            """update brands
+               set seed_url = coalesce($2, seed_url),
+                   active   = coalesce($3, active)
+               where id = $1::uuid""",
+            brand_id,
+            seed_url,
+            active,
+        )
+    return {"ok": True}
 
 
 async def create_scrape_job(brand_id: str) -> dict:
