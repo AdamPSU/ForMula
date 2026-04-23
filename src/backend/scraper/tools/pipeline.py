@@ -2,22 +2,36 @@
 
 import asyncio
 import os
+from collections import deque
 from pathlib import Path
 from urllib.parse import urlparse
 
 from firecrawl import AsyncFirecrawl
+from firecrawl.v2.utils.error_handler import RateLimitError
 from pydantic import ValidationError
 
 from ..db import connection, get_pool
-from ..models import ProductExtraction
+from ..models import SUBCATEGORY_TO_CATEGORY, ProductExtraction
 
 
 EXTRACT_PROMPT = (
-    "Extract product information from this page. Only return fields that are "
-    "visible verbatim on the page. Many pages are not product pages (e.g. "
-    "/about, /blog, /collections); in that case return null for every field. "
-    "Never paraphrase, translate, or invent values — especially not the INCI "
-    "ingredient list. Return the ingredient list exactly as printed on the label."
+    "Extract structured data about ONE specific product from its product detail "
+    "page. Verbatim-extraction only: never paraphrase, translate, reorder, "
+    "invent, or concatenate values.\n"
+    "\n"
+    "Scope strictly to this product. Product pages routinely embed 'shop similar' "
+    "carousels, 'you may also like' rails, bundle-constituent listings, and "
+    "sibling-product cards — ignore all of them. Only pull values that "
+    "unambiguously describe the product this page is about. If attribution is "
+    "ambiguous, return null.\n"
+    "\n"
+    "Recognize non-product pages. Editorial (/blog, /about), policy, ritual "
+    "guide, and collection/category pages are not single-product pages — return "
+    "null for every field.\n"
+    "\n"
+    "Null is always a valid answer. Never invent a value to fill a field, and "
+    "never pick the closest-ish enum value when nothing truly fits. A wrong "
+    "value is worse than a null value."
 )
 
 
@@ -132,8 +146,54 @@ async def stage_products(job_id: str, brand_id: str, urls_file: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Extraction — unchanged
+# Extraction
 # ---------------------------------------------------------------------------
+
+_RETRY_ATTEMPTS = 4
+_RETRY_BASE_S = 10  # 10, 20, 40, 60 — survives Firecrawl's 60s rate-limit window
+_SCRAPE_COST_CREDITS = 5  # JSON-format /scrape is 5 credits per URL
+_FREE_RPM = 10
+_FREE_CONCURRENCY = 2
+
+
+class _RateLimiter:
+    """Sliding-window async rate limiter: max N acquires per window_s seconds."""
+
+    def __init__(self, max_requests: int, window_s: float = 60.0):
+        self._max = max_requests
+        self._window_s = window_s
+        self._timestamps: deque[float] = deque()
+        self._lock = asyncio.Lock()
+
+    async def acquire(self) -> None:
+        loop = asyncio.get_event_loop()
+        while True:
+            async with self._lock:
+                now = loop.time()
+                while self._timestamps and now - self._timestamps[0] >= self._window_s:
+                    self._timestamps.popleft()
+                if len(self._timestamps) < self._max:
+                    self._timestamps.append(now)
+                    return
+                wait_s = self._window_s - (now - self._timestamps[0])
+            await asyncio.sleep(wait_s)
+
+
+# Module-level so all in-process scrape calls share the same minute window.
+_scrape_limiter = _RateLimiter(max_requests=_FREE_RPM, window_s=60.0)
+
+
+def _retry_after_seconds(err: Exception) -> float | None:
+    resp = getattr(err, "response", None)
+    headers = getattr(resp, "headers", None)
+    header = headers.get("Retry-After") if headers else None
+    if not header:
+        return None
+    try:
+        return float(header)
+    except (TypeError, ValueError):
+        return None
+
 
 async def _extract_one(
     fc: AsyncFirecrawl,
@@ -143,7 +203,8 @@ async def _extract_one(
 ) -> tuple[str, ProductExtraction | None, str | None]:
     async with semaphore:
         last_error: str | None = None
-        for attempt in range(3):
+        for attempt in range(_RETRY_ATTEMPTS):
+            await _scrape_limiter.acquire()
             try:
                 doc = await fc.scrape(
                     url,
@@ -165,10 +226,18 @@ async def _extract_one(
                     return ("success", parsed, None)
                 parsed.ingredient_text = None
                 return ("missing", parsed, None)
+            except RateLimitError as e:
+                last_error = f"{type(e).__name__}: {e}"
+                if attempt < _RETRY_ATTEMPTS - 1:
+                    hinted = _retry_after_seconds(e)
+                    delay = hinted if hinted is not None else min(
+                        60, _RETRY_BASE_S * (2**attempt)
+                    )
+                    await asyncio.sleep(delay)
             except Exception as e:  # noqa: BLE001 — firecrawl raises varied errors
                 last_error = f"{type(e).__name__}: {e}"
-                if attempt < 2:
-                    await asyncio.sleep(2**attempt)
+                if attempt < _RETRY_ATTEMPTS - 1:
+                    await asyncio.sleep(min(60, _RETRY_BASE_S * (2**attempt)))
         return ("failed", None, last_error)
 
 
@@ -188,8 +257,20 @@ async def run_extraction(job_id: str, batch_size: int = 50) -> dict:
         return {"processed": 0, "success": 0, "missing": 0, "failed": 0}
 
     fc = _client()
+
+    # Preflight: live credit check so we never start a batch we can't finish.
+    expected_cost = len(rows) * _SCRAPE_COST_CREDITS
+    usage = await fc.get_credit_usage()
+    if usage.remaining_credits < expected_cost:
+        raise RuntimeError(
+            f"insufficient Firecrawl credits: need {expected_cost} for "
+            f"{len(rows)} URLs, have {usage.remaining_credits}"
+        )
+
     schema = ProductExtraction.model_json_schema()
-    sem = asyncio.Semaphore(8)
+    # Concurrency and RPM are enforced independently: Semaphore for parallel
+    # workers, _scrape_limiter for the 10/min Free-tier quota.
+    sem = asyncio.Semaphore(_FREE_CONCURRENCY)
 
     tasks = [_extract_one(fc, r["url"], schema, sem) for r in rows]
     results = await asyncio.gather(*tasks)
@@ -201,19 +282,28 @@ async def run_extraction(job_id: str, batch_size: int = 50) -> dict:
             for row, (status, parsed, err) in zip(rows, results):
                 stats[status] += 1
                 if parsed is not None:
+                    category = (
+                        SUBCATEGORY_TO_CATEGORY[parsed.subcategory]
+                        if parsed.subcategory is not None
+                        else None
+                    )
                     await conn.execute(
                         """update products set
                              name            = coalesce($2, name),
-                             product_type    = coalesce($3, product_type),
-                             description     = coalesce($4, description),
-                             ingredient_text = coalesce($5, ingredient_text),
-                             scrape_status   = $6,
+                             subcategory     = coalesce($3, subcategory),
+                             category        = coalesce($4, category),
+                             description     = coalesce($5, description),
+                             price           = coalesce($6, price),
+                             ingredient_text = coalesce($7, ingredient_text),
+                             scrape_status   = $8,
                              scrape_error    = null
                            where id = $1""",
                         row["id"],
                         parsed.name,
-                        parsed.product_type,
+                        parsed.subcategory,
+                        category,
                         parsed.description,
+                        parsed.price,
                         parsed.ingredient_text,
                         status,
                     )

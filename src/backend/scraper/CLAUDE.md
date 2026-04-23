@@ -16,27 +16,54 @@ cd src/backend
 uv run python -m scraper <subcommand> [--flag value ...]
 ```
 
-## Happy path (always follow this order)
+## Happy path
+
+There are two flows. Always start with `list-brands` to see which applies.
+
+### A. Onboarding — brand not yet in the DB (no verified seed_url)
+
+Verify the seed **before** creating the brand. Nothing hits the DB until the
+index is proven to return product URLs.
 
 ```
-list-brands
-→ create-scrape-job --brand-id <id>
-→ list-site-urls --seed-url <url> [--search "hair products"] [--limit 100]
+list-site-urls --seed-url <domain> [--search "hair products"] [--limit 100]
   │ read the ranked list, pick a products-index URL (collections/shop/all-products page)
   │ if nothing looks like an index in the top 100, re-run with --limit 500
-→ list-page-links --url <index_url>
+→ list-page-links --url <candidate_index>
   │ verify the returned links look like individual product URLs
+  │ if the links are clearly not products, repick from list-site-urls output
   │ if the page paginates, see "Pagination" below
-  │ if the links are clearly not products, re-pick the index via list-site-urls
-→ (write the verified URLs, one per line, to /tmp/<job>-urls.txt using the Write tool)
+→ create-brand --slug <s> --name <n> --website-url <domain> --seed-url <verified_index>
+→ create-scrape-job --brand-id <id>
+→ (write the verified links from list-page-links to /tmp/<job>-urls.txt)
 → stage-products --job-id <jid> --brand-id <id> --urls-file /tmp/<job>-urls.txt
+→ check-budget
+  │ confirm remaining_credits ≥ pages_found × 5 before proceeding
 → run-extraction --job-id <jid>     (loop until no pending rows remain)
+→ finish --job-id <jid> --summary "..."
+```
+
+### B. Routine — brand already has a verified seed_url
+
+```
+list-brands                                      (read {id, seed_url})
+→ create-scrape-job --brand-id <id>
+→ list-page-links --url <brand.seed_url>         (catches new products)
+→ (write the links to /tmp/<job>-urls.txt)
+→ stage-products --job-id <jid> --brand-id <id> --urls-file /tmp/<job>-urls.txt
+→ check-budget
+  │ confirm remaining_credits ≥ pages_found × 5 before proceeding
+→ run-extraction --job-id <jid>
 → finish --job-id <jid> --summary "..."
 ```
 
 **There is no shortcut.** Do not stage URLs directly from `list-site-urls`
 output — always route through `list-page-links` on an index page first. The
 extra Firecrawl credit is insurance against wasting 5 credits per false positive.
+
+**`seed_url` is the verified products-index URL** (e.g. `/collections/all`,
+`/collections/frontpage`, `/shop`) — **not** the domain root. `website_url`
+holds the domain. Never create a brand without a verified seed.
 
 ## Tools
 
@@ -66,10 +93,22 @@ extra Firecrawl credit is insurance against wasting 5 credits per false positive
 | `run-extraction` | `--job-id [--batch-size 50]`          | `{processed, success, missing, failed}` |
 
 Picks up `pending` rows in batches. For each URL: Firecrawl `/scrape` with
-JSON format extracts `{name, product_type, description, ingredient_text}` in
+JSON format extracts `{name, subcategory, description, price, ingredient_text}` in
 one call. Validates INCI (≥5 comma-separated tokens), upserts with final
-`scrape_status`. Retries transient errors with exponential backoff (3 attempts).
-**Call repeatedly until no pending rows remain.**
+`scrape_status`. Retries transient errors with exponential backoff (4 attempts).
+On `RateLimitError` (429), honors the server's `Retry-After` header when
+present. Preflights Firecrawl credits before the batch and raises if the
+balance is below `len(batch) × 5`. **Call repeatedly until no pending rows
+remain.**
+
+### Budget
+
+| Subcommand     | Flags | Returns                                                                           |
+| -------------- | ----- | --------------------------------------------------------------------------------- |
+| `check-budget` | —     | `{remaining_credits, plan_credits, billing_period_start, billing_period_end}`     |
+
+Hits Firecrawl's live credit-usage endpoint. Free itself. Run this **before
+every** `run-extraction` and whenever you plan to move to another brand.
 
 ### Debug & recovery
 
@@ -119,15 +158,32 @@ After `run-extraction`, each product row has one of these statuses:
 Expected total for a typical ~50-product brand: **~252 credits**
 (1 map + 1 index + 50 × 5 extract).
 
-### Rate limits (by Firecrawl plan)
+### Current plan & rate limits
+
+- **Firecrawl Free tier** — 2 concurrent + 10 req/min on `/scrape`.
+- `run-extraction` enforces both quotas independently:
+  - `Semaphore(2)` caps in-flight parallelism.
+  - A module-level sliding-window limiter caps requests at 10 per 60s, so
+    a burst of fast responses cannot self-trigger 429s.
+- On `RateLimitError` it sleeps for `Retry-After` seconds if the header is
+  present; otherwise falls back to 10/20/40/60s across 4 attempts.
+- Do not raise any of these unless the plan is upgraded.
+
+### Budget awareness
+
+- A typical 50-product brand costs ~252 credits
+  (1 map + 1 index + 50 × 5 extract).
+- Source of truth for remaining credits is the `check-budget` tool, not this
+  file. Never hard-code a balance here — it decays the moment anyone scrapes.
+- `run-extraction` preflights the live balance against `len(batch) × 5` and
+  raises if insufficient. That's the hard stop; `check-budget` is for planning
+  across brands.
+
+### Rate limits (reference, by plan)
 
 - Free: 2 concurrent + 10 req/min
 - Hobby: 5 concurrent + 100 req/min
 - Standard: 50 concurrent + 500 req/min
-
-`run-extraction` uses a `Semaphore(8)` for parallel scrapes. If you see
-repeated 429s on a Free or Hobby plan, that's the cause — reduce the semaphore
-in `pipeline.py` or upgrade the plan.
 
 ## Lessons update protocol
 

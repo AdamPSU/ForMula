@@ -13,7 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from .db import close
-from .tools import catalog, debug, pipeline
+from .tools import budget, catalog, debug, pipeline
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -63,6 +63,8 @@ def _build_parser() -> argparse.ArgumentParser:
     rx.add_argument("--job-id", required=True)
     rx.add_argument("--batch-size", type=int, default=50)
 
+    s.add_parser("check-budget")
+
     sp = s.add_parser("scrape-page")
     sp.add_argument("--url", required=True)
 
@@ -109,6 +111,8 @@ async def _dispatch(args: argparse.Namespace):
             return await pipeline.stage_products(args.job_id, args.brand_id, args.urls_file)
         case "run-extraction":
             return await pipeline.run_extraction(args.job_id, args.batch_size)
+        case "check-budget":
+            return await budget.check_budget()
         case "scrape-page":
             return await debug.scrape_page(args.url)
         case "inspect-product":
