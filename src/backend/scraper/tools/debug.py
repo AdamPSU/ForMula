@@ -4,24 +4,13 @@ from pydantic import ValidationError
 
 from ..db import connection
 from ..models import ProductExtraction
-from .pipeline import EXTRACT_PROMPT, _client, _parse_json_field
-
-
-_MARKDOWN_TRUNCATE = 4000
-
-
-def _truncate(md: str | None) -> str:
-    if not md:
-        return ""
-    if len(md) <= _MARKDOWN_TRUNCATE:
-        return md
-    return md[:_MARKDOWN_TRUNCATE] + f"\n\n[...truncated, original {len(md)} chars]"
+from .pipeline import EXTRACT_PROMPT, _client
 
 
 async def scrape_page(url: str) -> dict:
     fc = _client()
     doc = await fc.scrape(url, formats=["markdown"])
-    return {"markdown": _truncate(getattr(doc, "markdown", None))}
+    return {"markdown": getattr(doc, "markdown", None)}
 
 
 async def inspect_product(url: str) -> dict:
@@ -34,13 +23,13 @@ async def inspect_product(url: str) -> dict:
             {"type": "json", "prompt": EXTRACT_PROMPT, "schema": schema},
         ],
     )
-    data = _parse_json_field(getattr(doc, "json", None))
+    data = getattr(doc, "json", None) or {}
     try:
         extraction = ProductExtraction(**data).model_dump()
     except ValidationError as ve:
         extraction = {"error": f"validation: {ve}", "raw": data}
     return {
-        "markdown": _truncate(getattr(doc, "markdown", None)),
+        "markdown": getattr(doc, "markdown", None),
         "extraction_attempt": extraction,
     }
 

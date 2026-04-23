@@ -1,9 +1,9 @@
-"""Firecrawl pipeline: discovery (/map) and extraction (/scrape + json format)."""
+"""Firecrawl pipeline: discovery (/map + index enumeration) and extraction."""
 
 import asyncio
-import json as _json
 import os
-from typing import Any
+from pathlib import Path
+from urllib.parse import urlparse
 
 from firecrawl import AsyncFirecrawl
 from pydantic import ValidationError
@@ -25,19 +25,6 @@ def _client() -> AsyncFirecrawl:
     return AsyncFirecrawl(api_key=os.environ["FIRECRAWL_API_KEY"])
 
 
-def _parse_json_field(raw: Any) -> dict:
-    if raw is None:
-        return {}
-    if isinstance(raw, str):
-        try:
-            return _json.loads(raw)
-        except _json.JSONDecodeError:
-            return {}
-    if isinstance(raw, dict):
-        return raw
-    return {}
-
-
 def _validate_ingredients(text: str | None) -> bool:
     if not text:
         return False
@@ -45,34 +32,108 @@ def _validate_ingredients(text: str | None) -> bool:
     return len(tokens) >= 5
 
 
-async def run_discovery(
-    job_id: str, brand_id: str, seed_url: str, limit: int = 500
+def _same_host(a: str, b: str) -> bool:
+    ha = urlparse(a).hostname or ""
+    hb = urlparse(b).hostname or ""
+    return ha.lower() == hb.lower()
+
+
+def _url_of(link) -> str | None:
+    return getattr(link, "url", None)
+
+
+# ---------------------------------------------------------------------------
+# Discovery — step 1: list domain URLs ranked by semantic relevance
+# ---------------------------------------------------------------------------
+
+async def list_site_urls(
+    seed_url: str,
+    search: str = "hair products",
+    limit: int = 100,
 ) -> dict:
     fc = _client()
-    result = await fc.map(seed_url, limit=limit)
+    result = await fc.map(seed_url, search=search, limit=limit)
+    urls = [u for link in (getattr(result, "links", None) or []) if (u := _url_of(link))]
+    return {"urls": urls}
 
-    urls: list[str] = []
-    for link in getattr(result, "links", []) or []:
-        url = getattr(link, "url", None) or (link.get("url") if isinstance(link, dict) else None)
-        if url:
-            urls.append(url)
 
-    if urls:
-        async with connection() as conn:
-            await conn.executemany(
-                """insert into products (brand_id, scrape_job_id, url, scrape_status)
-                   values ($1::uuid, $2::uuid, $3, 'pending')
-                   on conflict (url) do nothing""",
-                [(brand_id, job_id, u) for u in urls],
-            )
-            await conn.execute(
-                "update scrape_jobs set pages_found = $2 where id = $1::uuid",
-                job_id,
-                len(urls),
-            )
+# ---------------------------------------------------------------------------
+# Discovery — step 2: list same-domain links on one page (the products index)
+# ---------------------------------------------------------------------------
 
-    return {"urls_found": len(urls)}
+async def list_page_links(url: str) -> dict:
+    fc = _client()
+    doc = await fc.scrape(url, formats=["links"])
+    raw = getattr(doc, "links", None) or []
+    links = [
+        l for link in raw
+        if (l := (link if isinstance(link, str) else _url_of(link)))
+        and _same_host(l, url)
+        and l.rstrip("/") != url.rstrip("/")
+    ]
+    # dedupe preserving order
+    seen: set[str] = set()
+    out: list[str] = []
+    for l in links:
+        if l not in seen:
+            seen.add(l)
+            out.append(l)
+    return {"links": out}
 
+
+# ---------------------------------------------------------------------------
+# Discovery — step 3: insert verified URLs as pending rows
+# ---------------------------------------------------------------------------
+
+async def stage_products(job_id: str, brand_id: str, urls_file: str) -> dict:
+    path = Path(urls_file)
+    raw = [line.strip() for line in path.read_text().splitlines()]
+    urls = [
+        u for u in raw
+        if u and urlparse(u).scheme in ("http", "https")
+    ]
+    # dedupe while preserving order
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for u in urls:
+        if u not in seen:
+            seen.add(u)
+            deduped.append(u)
+
+    if not deduped:
+        return {"staged": 0, "skipped": 0}
+
+    async with connection() as conn:
+        before = await conn.fetchval(
+            "select count(*) from products where scrape_job_id = $1::uuid",
+            job_id,
+        )
+        await conn.executemany(
+            """insert into products (brand_id, scrape_job_id, url, scrape_status)
+               values ($1::uuid, $2::uuid, $3, 'pending')
+               on conflict (url) do nothing""",
+            [(brand_id, job_id, u) for u in deduped],
+        )
+        after = await conn.fetchval(
+            "select count(*) from products where scrape_job_id = $1::uuid",
+            job_id,
+        )
+        staged = (after or 0) - (before or 0)
+        skipped = len(deduped) - staged
+        await conn.execute(
+            """update scrape_jobs
+               set pages_found = coalesce(pages_found, 0) + $2
+               where id = $1::uuid""",
+            job_id,
+            staged,
+        )
+
+    return {"staged": staged, "skipped": skipped}
+
+
+# ---------------------------------------------------------------------------
+# Extraction — unchanged
+# ---------------------------------------------------------------------------
 
 async def _extract_one(
     fc: AsyncFirecrawl,
@@ -80,7 +141,6 @@ async def _extract_one(
     schema: dict,
     semaphore: asyncio.Semaphore,
 ) -> tuple[str, ProductExtraction | None, str | None]:
-    """Returns (status, parsed_or_none, error_or_none)."""
     async with semaphore:
         last_error: str | None = None
         for attempt in range(3):
@@ -95,7 +155,7 @@ async def _extract_one(
                         }
                     ],
                 )
-                data = _parse_json_field(getattr(doc, "json", None))
+                data = getattr(doc, "json", None) or {}
                 try:
                     parsed = ProductExtraction(**data)
                 except ValidationError as ve:
@@ -103,7 +163,6 @@ async def _extract_one(
 
                 if _validate_ingredients(parsed.ingredient_text):
                     return ("success", parsed, None)
-                # page reachable but no valid INCI string
                 parsed.ingredient_text = None
                 return ("missing", parsed, None)
             except Exception as e:  # noqa: BLE001 — firecrawl raises varied errors

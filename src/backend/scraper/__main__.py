@@ -46,11 +46,18 @@ def _build_parser() -> argparse.ArgumentParser:
     gjs = s.add_parser("get-job-stats")
     gjs.add_argument("--job-id", required=True)
 
-    rd = s.add_parser("run-discovery")
-    rd.add_argument("--job-id", required=True)
-    rd.add_argument("--brand-id", required=True)
-    rd.add_argument("--seed-url", required=True)
-    rd.add_argument("--limit", type=int, default=500)
+    lsu = s.add_parser("list-site-urls")
+    lsu.add_argument("--seed-url", required=True)
+    lsu.add_argument("--search", default="hair products")
+    lsu.add_argument("--limit", type=int, default=100)
+
+    lpl = s.add_parser("list-page-links")
+    lpl.add_argument("--url", required=True)
+
+    sp_cmd = s.add_parser("stage-products")
+    sp_cmd.add_argument("--job-id", required=True)
+    sp_cmd.add_argument("--brand-id", required=True)
+    sp_cmd.add_argument("--urls-file", required=True)
 
     rx = s.add_parser("run-extraction")
     rx.add_argument("--job-id", required=True)
@@ -94,10 +101,12 @@ async def _dispatch(args: argparse.Namespace):
             return await catalog.list_products(args.job_id, args.status, args.limit)
         case "get-job-stats":
             return await catalog.get_job_stats(args.job_id)
-        case "run-discovery":
-            return await pipeline.run_discovery(
-                args.job_id, args.brand_id, args.seed_url, args.limit
-            )
+        case "list-site-urls":
+            return await pipeline.list_site_urls(args.seed_url, args.search, args.limit)
+        case "list-page-links":
+            return await pipeline.list_page_links(args.url)
+        case "stage-products":
+            return await pipeline.stage_products(args.job_id, args.brand_id, args.urls_file)
         case "run-extraction":
             return await pipeline.run_extraction(args.job_id, args.batch_size)
         case "scrape-page":
