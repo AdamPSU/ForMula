@@ -13,7 +13,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from .db import close
-from .tools import budget, catalog, debug, pipeline
+from .tools import budget, catalog, debug, filter as filter_tool, pipeline
+from .validation import render_migration
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -59,6 +60,9 @@ def _build_parser() -> argparse.ArgumentParser:
     lpl = s.add_parser("list-page-links")
     lpl.add_argument("--url", required=True)
 
+    fl = s.add_parser("filter-links")
+    fl.add_argument("--urls-file", required=True)
+
     sp_cmd = s.add_parser("stage-products")
     sp_cmd.add_argument("--job-id", required=True)
     sp_cmd.add_argument("--brand-id", required=True)
@@ -69,6 +73,8 @@ def _build_parser() -> argparse.ArgumentParser:
     rx.add_argument("--batch-size", type=int, default=50)
 
     s.add_parser("check-budget")
+
+    s.add_parser("dump-schema")
 
     sp = s.add_parser("scrape-page")
     sp.add_argument("--url", required=True)
@@ -115,6 +121,8 @@ async def _dispatch(args: argparse.Namespace):
             return await pipeline.list_site_urls(args.seed_url, args.search, args.limit)
         case "list-page-links":
             return await pipeline.list_page_links(args.url)
+        case "filter-links":
+            return await filter_tool.filter_links(args.urls_file)
         case "stage-products":
             return await pipeline.stage_products(args.job_id, args.brand_id, args.urls_file)
         case "run-extraction":
@@ -144,6 +152,11 @@ async def _run(args: argparse.Namespace) -> None:
 def main() -> None:
     load_dotenv(Path(__file__).resolve().parents[1] / ".env")
     args = _build_parser().parse_args()
+    # dump-schema prints raw SQL to stdout — it is meant to be piped into a
+    # migration file, so it bypasses the JSON wrapper and skips DB init.
+    if args.cmd == "dump-schema":
+        print(render_migration())
+        return
     try:
         asyncio.run(_run(args))
     except Exception as e:

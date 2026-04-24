@@ -11,28 +11,8 @@ from firecrawl.v2.utils.error_handler import RateLimitError
 from pydantic import ValidationError
 
 from ..db import connection, get_pool
-from ..models import SUBCATEGORY_TO_CATEGORY, ProductExtraction
-
-
-EXTRACT_PROMPT = (
-    "Extract structured data about ONE specific product from its product detail "
-    "page. Verbatim-extraction only: never paraphrase, translate, reorder, "
-    "invent, or concatenate values.\n"
-    "\n"
-    "Scope strictly to this product. Product pages routinely embed 'shop similar' "
-    "carousels, 'you may also like' rails, bundle-constituent listings, and "
-    "sibling-product cards — ignore all of them. Only pull values that "
-    "unambiguously describe the product this page is about. If attribution is "
-    "ambiguous, return null.\n"
-    "\n"
-    "Recognize non-product pages. Editorial (/blog, /about), policy, ritual "
-    "guide, and collection/category pages are not single-product pages — return "
-    "null for every field.\n"
-    "\n"
-    "Null is always a valid answer. Never invent a value to fill a field, and "
-    "never pick the closest-ish enum value when nothing truly fits. A wrong "
-    "value is worse than a null value."
-)
+from ..prompts import EXTRACT_PROMPT
+from ..validation import ProductExtraction, check_db_drift
 
 
 def _client() -> AsyncFirecrawl:
@@ -150,10 +130,13 @@ async def stage_products(job_id: str, brand_id: str, urls_file: str) -> dict:
 # ---------------------------------------------------------------------------
 
 _RETRY_ATTEMPTS = 4
-_RETRY_BASE_S = 10  # 10, 20, 40, 60 — survives Firecrawl's 60s rate-limit window
+_RETRY_BASE_S = 10  # 10, 20, 40, 60 — survives a 60s rate-limit window
 _SCRAPE_COST_CREDITS = 5  # JSON-format /scrape is 5 credits per URL
-_FREE_RPM = 10
-_FREE_CONCURRENCY = 2
+# Firecrawl Standard plan (upgraded 2026-04-23): 50 concurrent, 500 req/min
+# on /scrape (per Firecrawl docs). Server-side 429s are still handled by the
+# retry/Retry-After path, so the RPM ceiling is a belt-and-suspenders tripwire.
+_RPM = 500
+_CONCURRENCY = 50
 
 
 class _RateLimiter:
@@ -180,7 +163,7 @@ class _RateLimiter:
 
 
 # Module-level so all in-process scrape calls share the same minute window.
-_scrape_limiter = _RateLimiter(max_requests=_FREE_RPM, window_s=60.0)
+_scrape_limiter = _RateLimiter(max_requests=_RPM, window_s=60.0)
 
 
 def _retry_after_seconds(err: Exception) -> float | None:
@@ -245,6 +228,9 @@ async def run_extraction(job_id: str, batch_size: int = 50) -> dict:
     pool = await get_pool()
 
     async with pool.acquire() as conn:
+        # Fail fast on Python ↔ DB enum drift — a mismatched CHECK constraint
+        # would reject writes AFTER we've paid Firecrawl for the scrape.
+        await check_db_drift(conn)
         rows = await conn.fetch(
             """select id, url from products
                where scrape_job_id = $1::uuid and scrape_status = 'pending'
@@ -269,24 +255,24 @@ async def run_extraction(job_id: str, batch_size: int = 50) -> dict:
 
     schema = ProductExtraction.model_json_schema()
     # Concurrency and RPM are enforced independently: Semaphore for parallel
-    # workers, _scrape_limiter for the 10/min Free-tier quota.
-    sem = asyncio.Semaphore(_FREE_CONCURRENCY)
+    # in-flight workers, _scrape_limiter for the per-minute plan quota.
+    sem = asyncio.Semaphore(_CONCURRENCY)
 
     tasks = [_extract_one(fc, r["url"], schema, sem) for r in rows]
     results = await asyncio.gather(*tasks)
 
     stats = {"processed": len(rows), "success": 0, "missing": 0, "failed": 0}
 
+    # Per-row autocommit (no wrapping transaction). We already paid Firecrawl
+    # for every row in `results`; one bad UPDATE (e.g. a CHECK-constraint
+    # violation from Python/SQL enum drift) must NOT roll back the batch and
+    # strand credits we already spent. Each row persists on its own.
     async with pool.acquire() as conn:
-        async with conn.transaction():
-            for row, (status, parsed, err) in zip(rows, results):
-                stats[status] += 1
+        for row, (status, parsed, err) in zip(rows, results):
+            final_status = status
+            final_err = err
+            try:
                 if parsed is not None:
-                    category = (
-                        SUBCATEGORY_TO_CATEGORY[parsed.subcategory]
-                        if parsed.subcategory is not None
-                        else None
-                    )
                     await conn.execute(
                         """update products set
                              name            = coalesce($2, name),
@@ -294,16 +280,18 @@ async def run_extraction(job_id: str, batch_size: int = 50) -> dict:
                              category        = coalesce($4, category),
                              description     = coalesce($5, description),
                              price           = coalesce($6, price),
-                             ingredient_text = coalesce($7, ingredient_text),
-                             scrape_status   = $8,
+                             currency        = coalesce($7, currency),
+                             ingredient_text = coalesce($8, ingredient_text),
+                             scrape_status   = $9,
                              scrape_error    = null
                            where id = $1""",
                         row["id"],
                         parsed.name,
                         parsed.subcategory,
-                        category,
+                        parsed.category,
                         parsed.description,
                         parsed.price,
+                        parsed.currency,
                         parsed.ingredient_text,
                         status,
                     )
@@ -316,12 +304,26 @@ async def run_extraction(job_id: str, batch_size: int = 50) -> dict:
                         row["id"],
                         err,
                     )
-            await conn.execute(
-                """update scrape_jobs
-                   set pages_scraped = coalesce(pages_scraped, 0) + $2
-                   where id = $1::uuid""",
-                job_id,
-                len(rows),
-            )
+                    final_status = "failed"
+            except Exception as db_err:  # noqa: BLE001 — CHECK / unique / type
+                final_status = "failed"
+                final_err = f"db: {type(db_err).__name__}: {db_err}"
+                await conn.execute(
+                    """update products set
+                         scrape_status = 'failed',
+                         scrape_error  = $2
+                       where id = $1""",
+                    row["id"],
+                    final_err,
+                )
+            stats[final_status] += 1
+
+        await conn.execute(
+            """update scrape_jobs
+               set pages_scraped = coalesce(pages_scraped, 0) + $2
+               where id = $1::uuid""",
+            job_id,
+            len(rows),
+        )
 
     return stats

@@ -8,6 +8,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "fastapi>=0.135.3",
     "firecrawl-py>=4.23.0",
+    "openai>=2.32.0",
     "pydantic>=2.13.0",
     "python-dotenv>=1.2.2",
     "uvicorn>=0.44.0",

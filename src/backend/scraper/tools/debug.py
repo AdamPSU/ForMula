@@ -3,8 +3,9 @@
 from pydantic import ValidationError
 
 from ..db import connection
-from ..models import ProductExtraction
-from .pipeline import EXTRACT_PROMPT, _client
+from ..prompts import EXTRACT_PROMPT
+from ..validation import ProductExtraction
+from .pipeline import _client
 
 
 async def scrape_page(url: str) -> dict:
