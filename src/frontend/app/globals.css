@@ -1,4 +1,10 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@theme inline {
+  --font-archivo: var(--font-archivo);
+  --font-clash: var(--font-clash);
+}
 
 :root {
   --background: #ffffff;
@@ -15,5 +21,39 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-archivo), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Editorial page-load reveal — staggered via inline animation-delay on each element */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.75rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.rise {
+  animation: rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}
+
+html {
+  color-scheme: dark;
+  font-size: 150%;
+}
+
+::selection {
+  background: rgb(255 255 255 / 0.2);
+  color: #ffffff;
 }
