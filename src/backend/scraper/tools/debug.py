@@ -1,4 +1,4 @@
-"""Debug & recovery tools: raw page inspection, per-URL extraction, failure reset."""
+"""Debug & recovery tools: per-URL extraction, failure reset."""
 
 from pydantic import ValidationError
 
@@ -8,31 +8,22 @@ from ..validation import ProductExtraction
 from .pipeline import _client
 
 
-async def scrape_page(url: str) -> dict:
-    fc = _client()
-    doc = await fc.scrape(url, formats=["markdown"])
-    return {"markdown": getattr(doc, "markdown", None)}
-
-
-async def inspect_product(url: str) -> dict:
+async def inspect_product(url: str, full: bool = False) -> dict:
     fc = _client()
     schema = ProductExtraction.model_json_schema()
-    doc = await fc.scrape(
-        url,
-        formats=[
-            "markdown",
-            {"type": "json", "prompt": EXTRACT_PROMPT, "schema": schema},
-        ],
-    )
+    formats: list = [{"type": "json", "prompt": EXTRACT_PROMPT, "schema": schema}]
+    if full:
+        formats.append("markdown")
+    doc = await fc.scrape(url, formats=formats)
     data = getattr(doc, "json", None) or {}
     try:
         extraction = ProductExtraction(**data).model_dump()
     except ValidationError as ve:
         extraction = {"error": f"validation: {ve}", "raw": data}
-    return {
-        "markdown": getattr(doc, "markdown", None),
-        "extraction_attempt": extraction,
-    }
+    out: dict = {"extraction_attempt": extraction}
+    if full:
+        out["markdown"] = getattr(doc, "markdown", None)
+    return out
 
 
 async def retry_failed(job_id: str) -> dict:

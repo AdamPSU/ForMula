@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import tempfile
 from collections import deque
 from pathlib import Path
 from urllib.parse import urlparse
@@ -17,6 +18,35 @@ from ..validation import ProductExtraction, check_db_drift
 
 def _client() -> AsyncFirecrawl:
     return AsyncFirecrawl(api_key=os.environ["FIRECRAWL_API_KEY"])
+
+
+def _write_urls_atomic(out_file: str, urls: list[str]) -> None:
+    """Write one URL per line atomically (write-then-rename)."""
+    path = Path(out_file)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", dir=path.parent, prefix=path.name + ".", suffix=".tmp", delete=False
+    ) as tmp:
+        tmp.write("\n".join(urls))
+        if urls:
+            tmp.write("\n")
+        tmp_path = tmp.name
+    os.replace(tmp_path, path)
+
+
+def _read_existing_urls(out_file: str) -> list[str]:
+    """Read prior URLs from out_file, deduped, preserving order. Empty if absent."""
+    path = Path(out_file)
+    if not path.exists():
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for line in path.read_text().splitlines():
+        u = line.strip()
+        if u and u not in seen:
+            seen.add(u)
+            out.append(u)
+    return out
 
 
 def _validate_ingredients(text: str | None) -> bool:
@@ -42,37 +72,43 @@ def _url_of(link) -> str | None:
 
 async def list_site_urls(
     seed_url: str,
+    out_file: str,
     search: str = "hair products",
     limit: int = 100,
 ) -> dict:
     fc = _client()
     result = await fc.map(seed_url, search=search, limit=limit)
     urls = [u for link in (getattr(result, "links", None) or []) if (u := _url_of(link))]
-    return {"urls": urls}
+    _write_urls_atomic(out_file, urls)
+    return {"count": len(urls), "out_file": out_file, "sample": urls[:5]}
 
 
 # ---------------------------------------------------------------------------
 # Discovery — step 2: list same-domain links on one page (the products index)
 # ---------------------------------------------------------------------------
 
-async def list_page_links(url: str) -> dict:
+async def list_page_links(url: str, out_file: str) -> dict:
     fc = _client()
     doc = await fc.scrape(url, formats=["links"])
     raw = getattr(doc, "links", None) or []
-    links = [
+    new_links = [
         l for link in raw
         if (l := (link if isinstance(link, str) else _url_of(link)))
         and _same_host(l, url)
         and l.rstrip("/") != url.rstrip("/")
     ]
-    # dedupe preserving order
-    seen: set[str] = set()
-    out: list[str] = []
-    for l in links:
+    # Union with any prior content of out_file so paginated calls
+    # (?page=1, ?page=2, ...) accumulate into the same file. Dedupe
+    # preserves insertion order: existing first, then new.
+    existing = _read_existing_urls(out_file)
+    seen: set[str] = set(existing)
+    merged = list(existing)
+    for l in new_links:
         if l not in seen:
             seen.add(l)
-            out.append(l)
-    return {"links": out}
+            merged.append(l)
+    _write_urls_atomic(out_file, merged)
+    return {"count": len(merged), "out_file": out_file, "sample": merged[:5]}
 
 
 # ---------------------------------------------------------------------------
@@ -205,10 +241,13 @@ async def _extract_one(
                 except ValidationError as ve:
                     return ("failed", None, f"validation: {ve}")
 
-                if _validate_ingredients(parsed.ingredient_text):
-                    return ("success", parsed, None)
-                parsed.ingredient_text = None
-                return ("missing", parsed, None)
+                # Trust the LLM's `no_inci_text` verdict; use the token
+                # count as a backstop in case the LLM said False but the
+                # text is too short to be a real INCI list.
+                if parsed.no_inci_text or not _validate_ingredients(parsed.ingredient_text):
+                    parsed.ingredient_text = None
+                    return ("missing", parsed, None)
+                return ("success", parsed, None)
             except RateLimitError as e:
                 last_error = f"{type(e).__name__}: {e}"
                 if attempt < _RETRY_ATTEMPTS - 1:

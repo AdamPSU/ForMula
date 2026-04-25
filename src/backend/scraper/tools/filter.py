@@ -5,7 +5,9 @@ Drops tool / accessory / merch / sample / gift-card URLs before they reach
 couldn't recommend. One Grok call per brand, priced in cents.
 """
 
+import json
 import os
+from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -111,10 +113,35 @@ def _read_urls(urls_file: str) -> list[str]:
     return out
 
 
-async def filter_links(urls_file: str) -> dict:
+def _write_keep_atomic(keep_file: str, keep: list[str]) -> None:
+    path = Path(keep_file)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text("\n".join(keep) + ("\n" if keep else ""))
+    os.replace(tmp, path)
+
+
+def _write_skip_atomic(skip_file: str, skip: list[dict]) -> None:
+    path = Path(skip_file)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(skip, indent=2))
+    os.replace(tmp, path)
+
+
+async def filter_links(urls_file: str, keep_file: str, skip_file: str) -> dict:
     urls = _read_urls(urls_file)
     if not urls:
-        return {"kept": 0, "skipped": 0, "keep": [], "skip": []}
+        _write_keep_atomic(keep_file, [])
+        _write_skip_atomic(skip_file, [])
+        return {
+            "kept": 0,
+            "skipped": 0,
+            "keep_file": keep_file,
+            "skip_file": skip_file,
+            "skip_buckets": {},
+            "sample_skips": [],
+        }
 
     client = _client()
     schema = _FilterResult.model_json_schema()
@@ -159,9 +186,31 @@ async def filter_links(urls_file: str) -> dict:
     keep = [u for u in urls if u in kept_urls] + unaccounted
     skip = [s.model_dump() for s in parsed.skip if s.url in input_set]
 
+    _write_keep_atomic(keep_file, keep)
+    _write_skip_atomic(skip_file, skip)
+
+    # Aggregate the classifier's own `reason` field into buckets — this is
+    # the upstream's data, not a regex applied after the fact.
+    bucket_counts = Counter(s["reason"].strip().lower() for s in skip)
+    skip_buckets = dict(bucket_counts.most_common())
+
+    # One representative skip per top bucket so the agent can spot-check
+    # the classifier's reasoning without seeing every skipped row.
+    seen_buckets: set[str] = set()
+    sample_skips: list[dict] = []
+    for s in skip:
+        bucket = s["reason"].strip().lower()
+        if bucket not in seen_buckets:
+            seen_buckets.add(bucket)
+            sample_skips.append(s)
+            if len(sample_skips) >= 5:
+                break
+
     return {
         "kept": len(keep),
         "skipped": len(skip),
-        "keep": keep,
-        "skip": skip,
+        "keep_file": keep_file,
+        "skip_file": skip_file,
+        "skip_buckets": skip_buckets,
+        "sample_skips": sample_skips,
     }

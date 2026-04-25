@@ -18,19 +18,18 @@ uv run python -m scraper <subcommand> [--flag value ...]
 - `list-brands` — read brands from the DB (`id`, `slug`, `website_url`, `seed_url`, `active`).
 - `create-brand` — insert a brand. `seed_url` is optional; fill it via `update-brand` once verified.
 - `update-brand` — set `--seed-url` or toggle `--active true|false`. Used to record the verified index, or to park a brand that didn't preflight.
-- `list-site-urls` — rank URLs across a domain by semantic relevance to a search term. 1 credit.
-- `list-page-links` — same-domain product links from one index page. 1 credit.
-- `filter-links` — Grok classifier that drops tool / accessory / merch / sample / gift-card URLs before staging. Input: urls file. Output: `{keep: [...], skip: [...]}`. 0 Firecrawl credits (one LLM call).
-- `inspect-product` — single-URL JSON scrape, used for preflight. 5 credits.
+- `list-page-links` — same-domain product links from one index page. Writes URLs to `--out-file` (paginated calls dedupe into the same file). Returns `{count, out_file, sample}` — never the full URL list. 1 credit.
+- `filter-links` — Grok classifier that drops tool / accessory / merch / sample / gift-card URLs before staging. Inputs: `--urls-file`, `--keep-file`, `--skip-file`. Returns `{kept, skipped, keep_file, skip_file, skip_buckets, sample_skips}`. 0 Firecrawl credits (one LLM call).
+- `inspect-product` — single-URL JSON scrape. Returns `{extraction_attempt}` only — the structured `ProductExtraction` dump, including `no_inci_text` (LLM-set boolean: True if this URL did not yield a real INCI list, for any reason — wrong page type, image-only INCI, blocked, B2B no-disclosure). Used for preflight. 5 credits. Add `--full` to also return raw page markdown (10–50K tokens) — only when something looks off and you want to read the page yourself.
 - `create-scrape-job` — start a job for a brand; returns `job_id`.
 - `stage-products` — insert URLs (one per line, from a file) as `pending`. Idempotent.
 - `check-budget` — live Firecrawl credit balance. Free.
 - `run-extraction` — scrape all `pending` rows for a job. 5 credits/URL. Loop until none remain.
 - `list-products` — read rows for a job, optionally filtered by status.
 - `retry-failed` — reset `failed` → `pending`.
-- `scrape-page` — debug: raw markdown of a URL.
 - `finish` — mark the job `complete`.
 - `dump-schema` — print the DROP+ADD SQL for the `category` / `subcategory` CHECK constraints, derived from the Python enum state in `models.py`. Use when you change `SUBCATEGORY_TO_CATEGORY` or the category Literal: `uv run python -m scraper dump-schema > db/supabase/migrations/<ts>_sync_enums.sql`, then apply. `run-extraction` runs a drift check up front and refuses to start if Python and DB disagree — so you cannot burn credits on a mismatched schema.
+- `list-site-urls` — fallback only. Ranks URLs across a domain by semantic relevance, writes to `--out-file`, returns `{count, out_file, sample}`. 1 credit. Use when the common index paths in step 3 all return empty / 404; on JS-rendered Shopify, parked landers, and wrong-TLD apexes it usually returns 1–3 URLs and discovery has to fall back to sitemap XML or `WebSearch` anyway.
 
 ## Happy path
 
@@ -38,26 +37,33 @@ uv run python -m scraper <subcommand> [--flag value ...]
 2. **New brand only:** `create-brand --slug ... --name "..." --website-url
    <domain>` with **no** `--seed-url` yet. The brand lands in the DB
    immediately so we have a record of what we're investigating.
-3. `list-site-urls --seed-url <domain>` → pick a products-index URL
-   (`/collections/all`, `/shop`, etc.). If none in the top 100, retry with
-   `--limit 500`.
-4. `list-page-links --url <candidate_index>`. If the page paginates (Shopify
-   default 24/page), append `?limit=250` and re-run, then iterate `?page=2`,
-   `?page=3` until empty/stable. Concatenate and dedupe. **Never stage from
-   `list-site-urls` output** — the index page is the source of truth. Write
-   the full link list to `/tmp/<brand>-links.txt`.
-5. `filter-links --urls-file /tmp/<brand>-links.txt`. Grok partitions the
-   list into `keep` (shampoos, conditioners, styling, treatments, oils,
-   masks, hair perfumes) and `skip` (bundles/sets/kits/duos, tools,
-   accessories, merch, samples, gift cards) — the skipped URLs have no
-   recommendable INCI, so extracting them is pure credit waste. Bundles
-   skip because their constituent products appear separately in the
-   catalog; scraping the bundle page returns `missing` (5-credit waste).
-   Write the `keep` array to `/tmp/<brand>-keep.txt` and use that file
-   for preflight and staging. Spot-check the `skip` list for false
-   positives before proceeding.
-6. **Preflight** (see below). Probe URLs should come from the filtered
-   `keep` list, not the raw `list-page-links` output.
+3. Pick a products-index URL by trying the common paths in order:
+   `/collections/all`, `/shop`, `/products`, `/collections/shop-all`. If
+   the brand is on Shopify, `/collections/all` is almost always the
+   answer. If all common paths return empty/404, fall back to
+   `list-site-urls --seed-url <domain> --out-file /tmp/<brand>-map.txt`
+   (1 credit) or fetch `/sitemap_products_1.xml` / `/sitemap.xml`
+   directly. See LESSONS for wrong-TLD, redirected, parked-lander, and
+   brand-name-collision cases.
+4. `list-page-links --url <candidate_index> --out-file /tmp/<brand>-links.txt`.
+   If the page paginates (Shopify default 24/page), append `?limit=250`
+   and re-run with the same `--out-file`, then iterate `?page=2`,
+   `?page=3` until `count` plateaus. The tool dedupes into the file
+   automatically; the printed `count` is the post-dedupe total. **The
+   index page is the source of truth — never stage URLs from
+   `list-site-urls` output.** Eyeball the `sample` field for URL-shape
+   traps (relative-href 404s, imweb `?idx=N`, etc.).
+5. `filter-links --urls-file /tmp/<brand>-links.txt --keep-file /tmp/<brand>-keep.txt --skip-file /tmp/<brand>-skip.json`.
+   Grok partitions into `keep` (shampoos, conditioners, styling,
+   treatments, oils, masks, hair perfumes) and `skip` (bundles, tools,
+   accessories, merch, samples, gift cards) — skipped URLs have no
+   recommendable INCI, so extracting them is pure credit waste; bundles
+   skip because their constituent products appear separately. Scan
+   `skip_buckets` and `sample_skips` for sanity, and spot-check the
+   keep file for accessory tokens (towel/brush/comb) and generic-noun
+   bundle slugs before proceeding (see LESSONS).
+6. **Preflight** (see below). Probe URLs should come from `keep_file`,
+   not the raw links file.
    - **Pass:** `update-brand --brand-id <id> --seed-url <verified_index>` to
      lock in the verified index, then continue.
    - **Fail:** `update-brand --brand-id <id> --active false` to park the
@@ -73,10 +79,21 @@ uv run python -m scraper <subcommand> [--flag value ...]
 
 - **Pick** 1–2 URLs likely to carry INCI: shampoo, conditioner, cream, mask,
   oil, serum, treatment. Avoid bundles, tools, and accessories (they return
-  `missing` even when extraction is fine — they prove nothing).
+  `no_inci_text=True` even when extraction is fine — they prove nothing).
 - **Probe** each with `inspect-product --url <u>`. 5 credits each.
-- **Pass:** `extraction_attempt` meets the extraction success bar (below).
-- **Decision:** if any probe passes, continue. If none pass, stop and park the brand per step 6.
+- **Read** `extraction_attempt.no_inci_text` — Firecrawl's LLM has decided
+  whether this page yielded a real INCI list:
+  - `False` → probe passes; `ingredient_text` is real INCI. Proceed.
+  - `True` → no usable INCI (any reason: wrong page type, image-only,
+    B2B login wall, Cloudflare block, marketing-callout-only). Try a
+    different URL from the keep file.
+- **Decision:** at least one probe with `no_inci_text=False` → continue
+  with `update-brand --seed-url`. Two consecutive `no_inci_text=True`
+  probes on different product URLs → park (`update-brand --active false`).
+- **Escape hatch:** if `no_inci_text` looks wrong (e.g. you can see in
+  `--full` markdown that there IS an INCI block Firecrawl missed), re-run
+  with `--full` to read the raw page yourself. Costs no extra Firecrawl
+  credits but adds 10–50K tokens. Last resort, not routine.
 
 ## Success & outcomes
 
@@ -91,16 +108,6 @@ After `run-extraction`, each row is:
   tools, accessories, and JS-hidden panels. Not a bug.
 - `failed` — network/timeout/validation error. Already retried 4× with
   backoff (honors `Retry-After` on 429). `retry-failed` resets to `pending`.
-
-## Firecrawl-blocked brands
-
-**Trigger.** In preflight, compare extracted `ingredient_text` tokens
-against the `markdown` of the same response. If >70% of the
-comma-separated tokens are absent from the markdown, Firecrawl is
-hallucinating — treat the brand as blocked.
-
-**Action.** Do not run `check-budget` or `run-extraction`. Read
-`references/FAILURE.md` and follow the agent-browser subagent runbook.
 
 ## Rate limits & budget
 

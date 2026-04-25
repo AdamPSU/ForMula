@@ -165,6 +165,24 @@ class ProductExtraction(BaseModel):
     product pages (e.g. /about, /blog). Extract-only — never invent values.
     """
 
+    no_inci_text: bool = Field(
+        ...,
+        description=(
+            "ALWAYS set this. True if this URL did NOT yield a real INCI "
+            "ingredient list as text — the page is not a product (category "
+            "page, editorial, 404), or it IS a product page but INCI is "
+            "image-only / behind a B2B login / not disclosed, or the page "
+            "rendered as an error (Cloudflare challenge, server error). "
+            "When True, `ingredient_text` MUST be null. Marketing-style "
+            "hero-ingredient callouts (a short list of common names like "
+            "'Argan Oil, Rosemary, Biotin') are NOT INCI — set True. "
+            "Set False only when the page is a single-product page AND "
+            "displays a complete INCI list (≥5 comma-separated tokens "
+            "with recognizable INCI conventions: Latin binomials, or "
+            "surfactant / conditioner stems like -eth, -trimonium, "
+            "-dimethicone, -betaine)."
+        ),
+    )
     name: str | None = Field(
         None,
         description=(

@@ -54,14 +54,18 @@ def _build_parser() -> argparse.ArgumentParser:
 
     lsu = s.add_parser("list-site-urls")
     lsu.add_argument("--seed-url", required=True)
+    lsu.add_argument("--out-file", required=True)
     lsu.add_argument("--search", default="hair products")
     lsu.add_argument("--limit", type=int, default=100)
 
     lpl = s.add_parser("list-page-links")
     lpl.add_argument("--url", required=True)
+    lpl.add_argument("--out-file", required=True)
 
     fl = s.add_parser("filter-links")
     fl.add_argument("--urls-file", required=True)
+    fl.add_argument("--keep-file", required=True)
+    fl.add_argument("--skip-file", required=True)
 
     sp_cmd = s.add_parser("stage-products")
     sp_cmd.add_argument("--job-id", required=True)
@@ -76,11 +80,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
     s.add_parser("dump-schema")
 
-    sp = s.add_parser("scrape-page")
-    sp.add_argument("--url", required=True)
-
     ip = s.add_parser("inspect-product")
     ip.add_argument("--url", required=True)
+    ip.add_argument(
+        "--full",
+        action="store_true",
+        help="Also return raw page markdown (10-50K tokens). Use only when "
+        "the structured extraction looks off and you want to read the page.",
+    )
 
     rf = s.add_parser("retry-failed")
     rf.add_argument("--job-id", required=True)
@@ -118,21 +125,23 @@ async def _dispatch(args: argparse.Namespace):
         case "get-job-stats":
             return await catalog.get_job_stats(args.job_id)
         case "list-site-urls":
-            return await pipeline.list_site_urls(args.seed_url, args.search, args.limit)
+            return await pipeline.list_site_urls(
+                args.seed_url, args.out_file, args.search, args.limit
+            )
         case "list-page-links":
-            return await pipeline.list_page_links(args.url)
+            return await pipeline.list_page_links(args.url, args.out_file)
         case "filter-links":
-            return await filter_tool.filter_links(args.urls_file)
+            return await filter_tool.filter_links(
+                args.urls_file, args.keep_file, args.skip_file
+            )
         case "stage-products":
             return await pipeline.stage_products(args.job_id, args.brand_id, args.urls_file)
         case "run-extraction":
             return await pipeline.run_extraction(args.job_id, args.batch_size)
         case "check-budget":
             return await budget.check_budget()
-        case "scrape-page":
-            return await debug.scrape_page(args.url)
         case "inspect-product":
-            return await debug.inspect_product(args.url)
+            return await debug.inspect_product(args.url, args.full)
         case "retry-failed":
             return await debug.retry_failed(args.job_id)
         case "finish":
