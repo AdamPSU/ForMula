@@ -1,5 +1,8 @@
+import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
+import asyncpg
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +11,22 @@ from fastapi.middleware.cors import CORSMiddleware
 # from src/backend/main.py. Loaded before any module reads os.environ.
 load_dotenv(Path(__file__).resolve().parents[2] / ".env.local")
 
-app = FastAPI()
+from ai.rerank.sql_filter.api import router as filter_router  # noqa: E402
+from profiles.api import router as profiles_router  # noqa: E402
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.pool = await asyncpg.create_pool(
+        os.environ["DATABASE_URL"], min_size=1, max_size=10
+    )
+    try:
+        yield
+    finally:
+        await app.state.pool.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(profiles_router)
+app.include_router(filter_router)
 
 
 @app.get("/")

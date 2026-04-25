@@ -1,24 +1,16 @@
 {
-  "version": 1,
+  "version": 6,
   "questions": [
     {
       "id": "curl_pattern",
-      "prompt": "Which photo looks most like your hair when it's clean and dry?",
+      "prompt": "Which photo looks most like your hair?",
       "type": "single_image",
-      "maps_to": "type",
+      "maps_to": "curl_pattern",
       "options": [
-        {"id": "1A", "label": "Straight (fine)", "image": "/curl-types/1a.jpg"},
-        {"id": "1B", "label": "Straight (medium)", "image": "/curl-types/1b.jpg"},
-        {"id": "1C", "label": "Straight (coarse)", "image": "/curl-types/1c.jpg"},
-        {"id": "2A", "label": "Loose wave", "image": "/curl-types/2a.jpg"},
-        {"id": "2B", "label": "Wave", "image": "/curl-types/2b.jpg"},
-        {"id": "2C", "label": "Defined wave", "image": "/curl-types/2c.jpg"},
-        {"id": "3A", "label": "Loose curl", "image": "/curl-types/3a.jpg"},
-        {"id": "3B", "label": "Curl", "image": "/curl-types/3b.jpg"},
-        {"id": "3C", "label": "Tight curl", "image": "/curl-types/3c.jpg"},
-        {"id": "4A", "label": "Coily (soft)", "image": "/curl-types/4a.jpg"},
-        {"id": "4B", "label": "Coily (zigzag)", "image": "/curl-types/4b.jpg"},
-        {"id": "4C", "label": "Coily (tight)", "image": "/curl-types/4c.jpg"}
+        {"id": "straight", "label": "Straight", "image": "/hair-types/straight.png"},
+        {"id": "wavy", "label": "Wavy", "image": "/hair-types/wavy.png"},
+        {"id": "curly", "label": "Curly", "image": "/hair-types/curly.png"},
+        {"id": "coily", "label": "Coily", "image": "/hair-types/coily.png"}
       ]
     },
     {
@@ -27,11 +19,11 @@
       "type": "single",
       "maps_to": "scalp_condition",
       "options": [
-        {"id": "oily", "label": "Feels oily or greasy"},
-        {"id": "dry", "label": "Feels tight or dry"},
-        {"id": "flaky", "label": "Itchy or flaky (dandruff)"},
-        {"id": "sensitive", "label": "Sensitive or easily irritated"},
-        {"id": "balanced", "label": "Feels balanced / normal"}
+        {"id": "oily", "label": "Oily"},
+        {"id": "dry", "label": "Dry"},
+        {"id": "flaky", "label": "Flaky"},
+        {"id": "sensitive", "label": "Sensitive"},
+        {"id": "balanced", "label": "Balanced"}
       ]
     },
     {
@@ -40,9 +32,9 @@
       "type": "single",
       "maps_to": "density",
       "options": [
-        {"id": "thin", "label": "Mostly visible — large gaps"},
-        {"id": "medium", "label": "Some scalp visible in places"},
-        {"id": "thick", "label": "Barely visible — full coverage"}
+        {"id": "thin", "label": "Mostly visible"},
+        {"id": "medium", "label": "Somewhat visible"},
+        {"id": "thick", "label": "Barely visible"}
       ]
     },
     {
@@ -51,78 +43,49 @@
       "type": "single",
       "maps_to": "strand_thickness",
       "options": [
-        {"id": "fine", "label": "Very fine / thin"},
-        {"id": "medium", "label": "Medium / normal"},
-        {"id": "coarse", "label": "Thick / coarse"}
+        {"id": "fine", "label": "Fine"},
+        {"id": "medium", "label": "Medium"},
+        {"id": "coarse", "label": "Coarse"}
       ]
     },
     {
-      "id": "chemical_history",
-      "prompt": "Have you ever chemically treated your hair? (select all that apply)",
-      "type": "multi",
-      "maps_to": "chemical_history",
-      "options": [
-        {"id": "bleach", "label": "Bleach or highlights"},
-        {"id": "color", "label": "Permanent color / dye"},
-        {"id": "relaxer", "label": "Permanent straightening / relaxer"},
-        {"id": "keratin", "label": "Keratin / acid smoothing"},
-        {"id": "none", "label": "No chemical treatments"}
-      ]
-    },
-    {
-      "id": "chemical_recency",
-      "prompt": "When was your most recent chemical service?",
+      "id": "drying_method",
+      "prompt": "How do you usually dry your hair?",
       "type": "single",
-      "maps_to": "chemical_recency",
-      "conditional_on": {"question_id": "chemical_history", "value_not_in": ["none"]},
-      "skip_value": "na",
+      "maps_to": "drying_method",
       "options": [
-        {"id": "within_1mo", "label": "Within the last month"},
-        {"id": "1_3mo", "label": "1–3 months ago"},
-        {"id": "3_6mo", "label": "3–6 months ago"},
-        {"id": "6plus", "label": "6+ months ago"}
-      ]
-    },
-    {
-      "id": "heat_frequency",
-      "prompt": "How often do you use heat tools (blow dryer, flat iron, curling iron)?",
-      "type": "single",
-      "maps_to": "heat_frequency",
-      "options": [
-        {"id": "daily", "label": "Daily"},
-        {"id": "weekly", "label": "A few times a week"},
-        {"id": "rare", "label": "Rarely"},
-        {"id": "never", "label": "Never"}
+        {"id": "air_dry", "label": "Air dry"},
+        {"id": "blow_dry", "label": "Blow dry"}
       ]
     },
     {
       "id": "concerns",
-      "prompt": "What are your top hair concerns right now? (pick up to 3)",
+      "prompt": "What are your main hair concerns?",
       "type": "multi",
       "max_select": 3,
       "maps_to": "concerns",
       "options": [
-        {"id": "frizz", "label": "Frizz"},
-        {"id": "breakage", "label": "Breakage / split ends"},
-        {"id": "thinning", "label": "Thinning / hair loss"},
-        {"id": "dandruff", "label": "Dandruff / flakes"},
-        {"id": "dryness", "label": "Dryness / lack of moisture"},
-        {"id": "dullness", "label": "Dullness / no shine"},
-        {"id": "flatness", "label": "Lack of volume"},
+        {"id": "frizz", "label": "Frizziness"},
+        {"id": "breakage", "label": "Breakage"},
+        {"id": "thinning", "label": "Thinning"},
+        {"id": "dandruff", "label": "Dandruff"},
+        {"id": "dryness", "label": "Dryness"},
+        {"id": "dullness", "label": "Dullness"},
+        {"id": "flatness", "label": "Flatness"},
         {"id": "irritation", "label": "Scalp irritation"}
       ]
     },
     {
       "id": "goal",
-      "prompt": "What's your main goal for your hair right now?",
+      "prompt": "What is your main hair goal?",
       "type": "single",
       "maps_to": "goals",
       "wrap_in_list": true,
       "options": [
-        {"id": "definition", "label": "More definition / curl shape"},
+        {"id": "definition", "label": "Define my curls"},
         {"id": "volume", "label": "More volume"},
-        {"id": "strength", "label": "Stronger / less breakage"},
-        {"id": "length", "label": "Grow longer / length retention"},
+        {"id": "strength", "label": "Repair damage"},
+        {"id": "length", "label": "Grow longer"},
         {"id": "scalp_health", "label": "Healthier scalp"},
         {"id": "shine", "label": "More shine"}
       ]
@@ -161,17 +124,6 @@
         {"id": "dry", "label": "Dry / low humidity"},
         {"id": "cold", "label": "Cold"},
         {"id": "mixed", "label": "Mixed / seasonal"}
-      ]
-    },
-    {
-      "id": "styling_time",
-      "prompt": "How much time do you spend styling each day?",
-      "type": "single",
-      "maps_to": "styling_time",
-      "options": [
-        {"id": "under_10", "label": "Under 10 minutes"},
-        {"id": "10_30", "label": "10–30 minutes"},
-        {"id": "30plus", "label": "30+ minutes"}
       ]
     }
   ]

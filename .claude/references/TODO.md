@@ -65,8 +65,9 @@ root `CLAUDE.md` references it.
    first; wire the model after step 3.
 2. **HairProfile module.** Top-level `src/backend/profiles/` (already
    has `data/`) gains a Pydantic `HairProfile` model derived from the
-   quiz schema, plus a `hair_profiles` table (FK to `public.profiles(id)`)
-   and migration. One row per quiz submission; users may retake.
+   quiz schema, plus a `hair_intakes` table (FK to `public.profiles(id)`)
+   and migration. One row per quiz submission; users may retake. Full
+   design: `hair-intakes-design.md`.
 3. **Subcategory resolver.** Free-text → `subcategory[]`. Likely a
    single LLM call against the closed enum in
    `scraper/validation/models.py::HairProductSubcategory`. Trivial
