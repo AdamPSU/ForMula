@@ -1,54 +1,21 @@
-"""Schema for the filter LLM's structured output.
+"""Pydantic schemas for the writer LLM and the /filter API.
 
-The LLM never emits SQL. It populates a `FilterIntent` whose fields map
-1:1 onto a `WHERE`-clause grammar the runtime composes. The schema
-itself is the allowlist: there is no field for `ingredient_text` or any
-other domain-knowledge surface, so the LLM cannot express
-ingredient-level filtering even if asked.
+The writer emits `WriterOutput`: a parameterized SQL string + a list of
+parameters. Safety is enforced by `sql.ast_validate` against this output,
+not by a clause-level allowlist (that was v1/v2). The schema here only
+constrains the wire shape.
 """
 
-from typing import Self
+from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
-
-from scraper.validation.models import (
-    HairProductCategory,
-    HairProductCurrency,
-    HairProductSubcategory,
-)
+from pydantic import BaseModel, Field
 
 
-class FilterClause(BaseModel):
-    """One AND-group of predicates against `products`.
+class WriterOutput(BaseModel):
+    """Raw output from the writer LLM."""
 
-    Multiple clauses are OR'd together at the SQL layer, which lets the
-    LLM express "leave-in under $20 OR deep conditioner under $40" — the
-    one realistic intent shape that doesn't fit a flat filter.
-
-    At least one of `subcategories` or `categories` must be populated;
-    a clause with only `price_max` or `currency` would match the entire
-    catalog and is rejected.
-    """
-
-    subcategories: list[HairProductSubcategory] = Field(default_factory=list)
-    categories: list[HairProductCategory] = Field(default_factory=list)
-    price_max: float | None = None
-    currency: HairProductCurrency | None = None
-
-    @model_validator(mode="after")
-    def _require_subcategory_or_category(self) -> Self:
-        if not self.subcategories and not self.categories:
-            raise ValueError(
-                "each clause must populate at least one of "
-                "`subcategories` or `categories`"
-            )
-        return self
-
-
-class FilterIntent(BaseModel):
-    """The full LLM response: one or more OR'd clauses."""
-
-    clauses: list[FilterClause] = Field(min_length=1)
+    sql: str = Field(min_length=1)
+    params: list[Any] = Field(default_factory=list)
 
 
 class FilterRequest(BaseModel):
@@ -56,6 +23,7 @@ class FilterRequest(BaseModel):
 
 
 class FilterResponse(BaseModel):
-    intent: FilterIntent
     products: list[dict]
     count: int
+    sql: str
+    params: list[Any]

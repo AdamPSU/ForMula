@@ -1,26 +1,21 @@
 """POST /filter — narrow the product catalog from free-text shopping intent.
 
-Single endpoint, JWT-gated. Orchestrates: LLM call → schema validation →
-SQL composition → DB fetch → response. Logs the full pipeline (raw
-response, parsed intent, SQL, params, row count, any error) to a
-discardable `log.txt` co-located with this module — exactly one entry
-per request, success or failure.
+Single endpoint, JWT-gated. Thin wrapper over the LangGraph workflow in
+`graph.py`. Builds initial state, awaits `graph.ainvoke(...)`, writes
+one log entry, returns the response (or 422/502 based on
+`final_error` prefix).
 
-The reranker (next milestone) will call `apply_filter` directly rather
-than going through this HTTP route.
+The reranker (next milestone) will invoke the graph (or its successor)
+directly rather than going through this HTTP route.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import ValidationError
 
-from ai.rerank.sql_filter.llm import call_llm, parse_intent
-from ai.rerank.sql_filter.log import log_call
-from ai.rerank.sql_filter.models import FilterIntent, FilterRequest, FilterResponse
-from ai.rerank.sql_filter.sql import build_filter_sql
+from ai.rerank.sql_filter.graph import FilterContext, graph
+from ai.rerank.sql_filter.log import log_from_state
+from ai.rerank.sql_filter.models import FilterRequest, FilterResponse
 from auth.jwt import get_current_user_id
 
 router = APIRouter(tags=["filter"])
@@ -32,50 +27,40 @@ async def filter_products(
     request: Request,
     user_id: str = Depends(get_current_user_id),  # noqa: ARG001 — gate only
 ) -> FilterResponse:
-    user_text = payload.text
-    raw: str | None = None
-    intent: FilterIntent | None = None
-    sql: str | None = None
-    params: list[Any] | None = None
-    rows: list | None = None
-    err: str | None = None
-
+    pool = request.app.state.pool
     try:
-        raw = await call_llm(user_text)
-        try:
-            intent = parse_intent(raw)
-        except ValidationError as exc:
-            err = f"ValidationError: {exc}"
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                "could not interpret request",
-            ) from exc
-
-        sql, params = build_filter_sql(intent)
-        pool = request.app.state.pool
-        async with pool.acquire() as conn:
-            rows = await conn.fetch(sql, *params)
-    except HTTPException:
-        raise
+        state = await graph.ainvoke(
+            {"user_text": payload.text, "attempt": 0},
+            context=FilterContext(pool=pool),
+        )
     except Exception as exc:
-        err = f"{type(exc).__name__}: {exc}"
+        log_from_state(
+            {
+                "user_text": payload.text,
+                "final_error": f"{type(exc).__name__}: {exc}",
+            }
+        )
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY, "filter pipeline failed"
         ) from exc
-    finally:
-        log_call(
-            user_text=user_text,
-            raw_response=raw,
-            parsed_intent_json=intent.model_dump_json() if intent else None,
-            sql=sql,
-            params=params,
-            row_count=len(rows) if rows is not None else None,
-            error=err,
+
+    log_from_state(state)
+
+    if state.get("final_error"):
+        kind = state["final_error"].split(":", 1)[0]
+        if kind == "AST":
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "could not interpret request",
+            )
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "filter pipeline failed"
         )
 
-    products = [dict(r) for r in rows or []]
+    rows = state["rows"] or []
     return FilterResponse(
-        intent=intent,  # type: ignore[arg-type]  # success path: intent is set
-        products=products,
-        count=len(products),
+        products=[dict(r) for r in rows],
+        count=len(rows),
+        sql=state["sql"],
+        params=state["params"] or [],
     )
