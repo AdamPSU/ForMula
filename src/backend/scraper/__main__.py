@@ -159,7 +159,7 @@ async def _run(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    load_dotenv(Path(__file__).resolve().parents[3] / ".env.local")
     args = _build_parser().parse_args()
     # dump-schema prints raw SQL to stdout — it is meant to be piped into a
     # migration file, so it bypasses the JSON wrapper and skips DB init.

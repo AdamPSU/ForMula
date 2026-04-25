@@ -28,6 +28,10 @@ root `CLAUDE.md` references it.
 - INCI function tags in `ingredients.function_tags` (humectant,
   surfactant, silicone, etc.) — useful as deterministic features
   alongside the model.
+- **Auth + `public.profiles` table (shipped 2026-04-25).** Email/password
+  sign-up via `@supabase/ssr`; the entire app is gated behind sign-in.
+  `public.profiles` is the FK target for everything user-owned —
+  `hair_profiles` will reference `public.profiles(id)`.
 
 ## Inputs that do NOT exist yet
 
@@ -61,7 +65,8 @@ root `CLAUDE.md` references it.
    first; wire the model after step 3.
 2. **HairProfile module.** Top-level `src/backend/profiles/` (already
    has `data/`) gains a Pydantic `HairProfile` model derived from the
-   quiz schema, plus a profile-storage table and migration.
+   quiz schema, plus a `hair_profiles` table (FK to `public.profiles(id)`)
+   and migration. One row per quiz submission; users may retake.
 3. **Subcategory resolver.** Free-text → `subcategory[]`. Likely a
    single LLM call against the closed enum in
    `scraper/validation/models.py::HairProductSubcategory`. Trivial

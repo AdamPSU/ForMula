@@ -1,8 +1,5 @@
-"use client";
-
 import { Home as HomeIcon } from "lucide-react";
-import { PromptInputBox } from "@/components/ui/ai-prompt-box";
-import BorderGlow from "@/components/ui/border-glow";
+import { UserMenu } from "@/components/auth/user-menu";
 import HeroText from "@/components/ui/hero-shutter-text";
 import {
   Breadcrumb,
@@ -11,6 +8,7 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { PromptSection } from "./_components/prompt-section";
 
 export default function Home() {
   return (
@@ -42,29 +40,25 @@ export default function Home() {
           paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
         }}
       >
-        <div
-          className="absolute left-6 top-6 z-20 md:left-10 md:top-8"
-          style={{
-            left: "max(1.5rem, env(safe-area-inset-left))",
-            top: "max(1.5rem, env(safe-area-inset-top))",
-          }}
-        >
+        <nav className="flex items-center justify-between">
           <Breadcrumb>
-            <BreadcrumbList>
+            <BreadcrumbList className="text-sm">
               <BreadcrumbItem>
                 <BreadcrumbLink href="/">
-                  <HomeIcon className="size-6" />
+                  <HomeIcon className="size-4" />
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator>
-                <div className="mx-1.5 size-1.5 rounded-full bg-white/40" />
+                <div className="mx-1 size-1 rounded-full bg-white/40" />
               </BreadcrumbSeparator>
               <BreadcrumbItem>
                 <BreadcrumbLink href="/info">info</BreadcrumbLink>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-        </div>
+
+          <UserMenu />
+        </nav>
 
         <div className="flex flex-1 items-center">
           <div className="max-w-[930px]">
@@ -83,12 +77,7 @@ export default function Home() {
             </p>
 
             <div className="rise mt-8 md:mt-10" style={{ animationDelay: "500ms" }}>
-              <BorderGlow className="rounded-3xl">
-                <PromptInputBox
-                  placeholder="What kind of hair are you working with?"
-                  onSend={(message, files) => console.log("send", { message, files })}
-                />
-              </BorderGlow>
+              <PromptSection />
             </div>
           </div>
         </div>
