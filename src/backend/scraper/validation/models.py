@@ -2,6 +2,20 @@ from typing import Literal, get_args
 
 from pydantic import BaseModel, Field, computed_field
 
+# HairProfile enums imported from the profile module to guarantee
+# vocabulary alignment between rerank docs and runtime queries.
+from profiles.models import (
+    Climate,
+    Concern,
+    CurlPattern,
+    Density,
+    Goal,
+    ProductAbsorption,
+    ScalpCondition,
+    StrandThickness,
+    WashFrequency,
+)
+
 
 # Source of truth: subcategory → category.
 # The Literal type below and the migration CHECK are both derived from these keys.
@@ -319,3 +333,134 @@ class ProductExtraction(BaseModel):
         if self.subcategory is None:
             return None
         return SUBCATEGORY_TO_CATEGORY[self.subcategory]  # type: ignore[return-value]
+
+
+# ─── Ingredient function tags ──────────────────────────────────────────
+# Source of truth for the `ingredients.function_tags` CHECK constraint.
+# Edit this Literal then regenerate the migration with:
+#   uv run python -m scraper dump-schema --target ingredients
+FunctionTag = Literal[
+    # Vehicles & moisture
+    "solvent", "humectant", "emollient", "occlusive",
+    "fatty_alcohol", "drying_alcohol",
+    # Surfactants split by ionic class
+    "anionic_surfactant", "cationic_surfactant",
+    "nonionic_surfactant", "amphoteric_surfactant",
+    # Silicones split by rinsability
+    "silicone_water_soluble", "silicone_non_water_soluble",
+    "silicone_volatile",
+    # Proteins split by penetration
+    "protein_hydrolyzed", "protein_intact",
+    # Lipids of botanical origin
+    "plant_oil", "butter",
+    # Conditioning & styling polymers
+    "polyquat", "film_former",
+    # Functional adjuncts
+    "preservative", "chelator", "ph_adjuster",
+    "fragrance", "essential_oil",
+    "exfoliant", "antioxidant", "ceramide",
+    # Targeted actives
+    "heat_protectant", "uv_filter", "antidandruff",
+    # Catch-all
+    "other",
+]
+
+
+class IngredientTagOutput(BaseModel):
+    """One tagged ingredient. Format that `tag-batch --file <jsonl>` reads."""
+
+    inci_name: str = Field(
+        ...,
+        description="Normalized UPPERCASE INCI name (matches the table's check constraint).",
+    )
+    function_tags: list[FunctionTag] = Field(
+        ...,
+        description="One or more functional categories from the closed enum.",
+    )
+    common_name: str = Field(
+        ...,
+        description="Human-friendly form, e.g. 'Glycerin' for 'GLYCERIN'.",
+    )
+    has_safety_concern: bool = Field(
+        ...,
+        description="True for ingredients with documented irritation, "
+        "endocrine, or restricted-use concerns (formaldehyde donors, "
+        "MIT/MCI above EU limits, banned dyes).",
+    )
+
+
+# ─── Rerank doc facets (LLM output) ────────────────────────────────────
+# What `generate-docs` asks the LLM to emit. The deterministic renderer
+# in `tools/descriptions.py` combines this with the product row's
+# Category / Subcategory / Ingredients to produce the YAML doc fed to
+# Cohere Rerank.
+#
+# Every list field uses the same Literal enum as `profiles/models.py`
+# so the LLM cannot emit a token outside the HairProfile vocabulary —
+# guaranteed query-side alignment. Empty lists collapse to the key
+# being omitted from the rendered YAML (silence is positives-only-safe;
+# the reranker never penalizes what it doesn't see).
+
+
+class RerankDocFacets(BaseModel):
+    """Positives-only fit signal for one product."""
+
+    description: str | None = Field(
+        None,
+        description=(
+            "Short positive marketing-style summary of the product. "
+            "REQUIRED only when the input row's `description` is null; "
+            "otherwise leave null and the renderer uses the scraped "
+            "description verbatim. NEVER mention what the product is "
+            "NOT for or who it is NOT suited to — the reranker is a "
+            "cross-encoder and tokens from negations still match the "
+            "query they were meant to exclude."
+        ),
+    )
+    hair_types: list[CurlPattern] = Field(
+        default_factory=list,
+        description=(
+            "Curl patterns this product is a good fit for. Empty list "
+            "= no strong signal (key will be omitted)."
+        ),
+    )
+    concerns_addressed: list[Concern] = Field(
+        default_factory=list,
+        description="Hair concerns this product helps address.",
+    )
+    goals_served: list[Goal] = Field(
+        default_factory=list,
+        description="Goals this product helps the user achieve.",
+    )
+    scalp_fit: list[ScalpCondition] = Field(
+        default_factory=list,
+        description="Scalp conditions this product is well-suited to.",
+    )
+    strand_thickness_fit: list[StrandThickness] = Field(
+        default_factory=list,
+        description="Strand thicknesses this product is well-suited to.",
+    )
+    density_fit: list[Density] = Field(
+        default_factory=list,
+        description="Hair densities this product is well-suited to.",
+    )
+    porosity_fit: list[ProductAbsorption] = Field(
+        default_factory=list,
+        description=(
+            "Porosity-by-absorption fit. Map: soaks=high porosity, "
+            "sits=low porosity, greasy=low porosity with oily-scalp "
+            "compatibility, unsure=omit."
+        ),
+    )
+    climate_fit: list[Climate] = Field(
+        default_factory=list,
+        description="Climates this product performs well in.",
+    )
+    routine_fit: list[WashFrequency] = Field(
+        default_factory=list,
+        description=(
+            "Wash-frequency routines this product fits. Map: daily / "
+            "2_3_days = gentle daily-use products; weekly / less = "
+            "intensive treatments and rich masks."
+        ),
+    )

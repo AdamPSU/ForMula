@@ -27,3 +27,4 @@ class FilterResponse(BaseModel):
     count: int
     sql: str
     params: list[Any]
+    reranked: bool

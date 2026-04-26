@@ -26,7 +26,7 @@ export function QuestionMulti({ options, value, onChange, maxSelect }: Props) {
   return (
     <div className="flex flex-col gap-2">
       {maxSelect !== undefined && (
-        <p className="text-[11px] text-white/50">
+        <p className="text-[11px] text-[#f5ebdf]/82">
           {selected.length} / {maxSelect} selected
         </p>
       )}
@@ -45,11 +45,12 @@ export function QuestionMulti({ options, value, onChange, maxSelect }: Props) {
               disabled={atCap}
               className={cn(
                 "rounded-xl border px-4 py-2.5 text-left text-sm transition-colors",
-                "border-white/15 bg-white/5 text-white/85 backdrop-blur-md",
-                "hover:border-white/30 hover:bg-white/[0.09]",
+                "border-[#ddcbb6] bg-[#f5ebdf]/96 text-[#442c2d]",
+                "hover:border-[#442c2d]/35 hover:bg-[#fbf4eb]",
                 isSelected &&
-                  "border-white/70 bg-white/[0.14] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)]",
-                atCap && "cursor-not-allowed opacity-40 hover:border-white/15 hover:bg-white/5",
+                  "border-[#442c2d] bg-[#e7d2b8] text-[#442c2d] shadow-[0_18px_35px_-24px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,247,237,0.7)]",
+                atCap &&
+                  "cursor-not-allowed opacity-45 hover:border-[#ddcbb6] hover:bg-[#f5ebdf]/96",
               )}
             >
               {opt.label}

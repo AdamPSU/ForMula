@@ -13,7 +13,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from .db import close
-from .tools import budget, catalog, debug, filter as filter_tool, pipeline
+from .tools import (
+    budget,
+    catalog,
+    debug,
+    descriptions,
+    filter as filter_tool,
+    ingredients,
+    pipeline,
+)
 from .validation import render_migration
 
 
@@ -78,7 +86,33 @@ def _build_parser() -> argparse.ArgumentParser:
 
     s.add_parser("check-budget")
 
-    s.add_parser("dump-schema")
+    ds = s.add_parser("dump-schema")
+    ds.add_argument(
+        "--target",
+        choices=["products", "ingredients"],
+        default="products",
+    )
+
+    lu = s.add_parser("list-untagged")
+    lu.add_argument("--out-file", required=True)
+    lu.add_argument("--limit", type=int)
+
+    li = s.add_parser("lookup-ingredient")
+    li.add_argument("--name", required=True)
+
+    tb = s.add_parser("tag-batch")
+    tb.add_argument("--file", required=True)
+
+    s.add_parser("tag-status")
+
+    lwd = s.add_parser("list-without-doc")
+    lwd.add_argument("--out-file", required=True)
+    lwd.add_argument("--limit", type=int)
+
+    gd = s.add_parser("generate-docs")
+    gd.add_argument("--in-file", required=True)
+
+    s.add_parser("doc-status")
 
     ip = s.add_parser("inspect-product")
     ip.add_argument("--url", required=True)
@@ -140,6 +174,20 @@ async def _dispatch(args: argparse.Namespace):
             return await pipeline.run_extraction(args.job_id, args.batch_size)
         case "check-budget":
             return await budget.check_budget()
+        case "list-untagged":
+            return await ingredients.list_untagged(args.out_file, args.limit)
+        case "lookup-ingredient":
+            return await ingredients.lookup_ingredient(args.name)
+        case "tag-batch":
+            return await ingredients.tag_batch(args.file)
+        case "tag-status":
+            return await ingredients.tag_status()
+        case "list-without-doc":
+            return await descriptions.list_without_doc(args.out_file, args.limit)
+        case "generate-docs":
+            return await descriptions.generate_docs(args.in_file)
+        case "doc-status":
+            return await descriptions.doc_status()
         case "inspect-product":
             return await debug.inspect_product(args.url, args.full)
         case "retry-failed":
@@ -164,7 +212,7 @@ def main() -> None:
     # dump-schema prints raw SQL to stdout — it is meant to be piped into a
     # migration file, so it bypasses the JSON wrapper and skips DB init.
     if args.cmd == "dump-schema":
-        print(render_migration())
+        print(render_migration(args.target))
         return
     try:
         asyncio.run(_run(args))

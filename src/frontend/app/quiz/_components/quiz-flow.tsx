@@ -122,15 +122,15 @@ export function QuizFlow({ quiz }: { quiz: Quiz }) {
   return (
     <div className="flex w-full max-w-[480px] flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between text-[11px] text-white/50">
+        <div className="flex items-center justify-between text-[11px] text-[#f5ebdf]/78">
           <span>
             {clampedStep + 1} / {total}
           </span>
           <span className="font-clash lowercase">hair intake</span>
         </div>
-        <div className="h-px w-full bg-white/10">
+        <div className="h-px w-full bg-[#f5ebdf]/24">
           <div
-            className="h-px bg-white transition-[width] duration-300"
+            className="h-px bg-[#f5ebdf] transition-[width] duration-300"
             style={{ width: `${((clampedStep + 1) / total) * 100}%` }}
           />
         </div>
@@ -177,9 +177,9 @@ export function QuizFlow({ quiz }: { quiz: Quiz }) {
           onClick={back}
           disabled={clampedStep === 0 || pending}
           className={cn(
-            "flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs text-white/80 backdrop-blur-sm transition-colors",
-            "hover:border-white/30 hover:bg-white/[0.09]",
-            "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:bg-white/5",
+            "flex items-center gap-1.5 rounded-full border border-[#ddcbb6] bg-[#f5ebdf]/96 px-4 py-2 text-xs text-[#442c2d] transition-colors",
+            "hover:border-[#442c2d]/35 hover:bg-[#fbf4eb]",
+            "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#ddcbb6] disabled:hover:bg-[#f5ebdf]/96",
           )}
         >
           <ArrowLeft className="size-3.5" />
@@ -192,8 +192,8 @@ export function QuizFlow({ quiz }: { quiz: Quiz }) {
             onClick={next}
             disabled={!advanceOk || pending}
             className={cn(
-              "flex items-center gap-1.5 rounded-full bg-white px-5 py-2 text-xs font-medium text-black transition-colors",
-              "hover:bg-white/90",
+              "flex items-center gap-1.5 rounded-full bg-[#f5ebdf] px-5 py-2 text-xs font-medium text-[#442c2d] transition-colors",
+              "hover:bg-[#fff6ed]",
               "disabled:cursor-not-allowed disabled:opacity-40",
             )}
           >

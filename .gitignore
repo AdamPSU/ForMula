@@ -55,7 +55,11 @@ ENV/
 
 # Logs
 *.log
+*.log.txt
 logs/
+
+# Media
+*.mp4
 
 # Node (frontend)
 node_modules/

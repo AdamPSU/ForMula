@@ -31,7 +31,7 @@ from langgraph.types import Command, RetryPolicy
 from ai.rerank.sql_filter.llm import call_writer
 from ai.rerank.sql_filter.sql import SqlValidationError, ast_validate
 
-MAX_ATTEMPTS = 2
+MAX_ATTEMPTS = 3
 
 
 class FilterState(TypedDict, total=False):

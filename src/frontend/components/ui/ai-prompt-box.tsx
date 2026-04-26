@@ -9,8 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const cn = (...classes: (string | undefined | null | false)[]) =>
   classes.filter(Boolean).join(" ");
 
-// Scoped scrollbar styling — tuned for a translucent glass surface so the thumb
-// reads as light-on-dark without a hard edge. Injected once, client-side.
+// Scoped scrollbar styling for the warm surface treatment.
 const styles = `
   textarea::-webkit-scrollbar {
     width: 6px;
@@ -19,11 +18,11 @@ const styles = `
     background: transparent;
   }
   textarea::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.18);
+    background-color: rgba(120, 87, 55, 0.24);
     border-radius: 3px;
   }
   textarea::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(120, 87, 55, 0.4);
   }
 `;
 
@@ -36,7 +35,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => (
     <textarea
       className={cn(
-        "flex w-full resize-none border-none bg-transparent px-3 py-2.5 text-base text-white placeholder:text-white/40 disabled:cursor-not-allowed disabled:opacity-50 min-h-[66px]",
+        "min-h-[66px] flex w-full resize-none border-none bg-transparent px-3 py-2.5 text-base text-[#442c2d] placeholder:text-[#442c2d]/55 disabled:cursor-not-allowed disabled:opacity-50",
         "focus:outline-none focus-visible:outline-none",
         className,
       )}
@@ -61,7 +60,7 @@ const TooltipContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
-      "z-50 overflow-hidden rounded-lg border border-white/15 bg-white/[0.08] px-2.5 py-1 text-xs text-white/90 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2),0_10px_30px_-10px_rgba(0,0,0,0.5)]",
+      "z-50 overflow-hidden rounded-lg border border-[#e1d1be] bg-[#fbf4eb] px-2.5 py-1 text-xs text-[#442c2d] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.45)]",
       "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1",
       className,
     )}
@@ -98,7 +97,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 grid w-full max-w-[90vw] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl border border-white/15 bg-white/[0.07] p-0 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_30px_80px_-20px_rgba(0,0,0,0.6)] duration-300 md:max-w-[1200px]",
+        "fixed left-1/2 top-1/2 z-50 grid w-full max-w-[90vw] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl border border-[#e1d1be] bg-[#f5ebdf] p-0 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.65)] duration-300 md:max-w-[1200px]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}
@@ -107,9 +106,9 @@ const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close
         aria-label="Close preview"
-        className="absolute right-4 top-4 z-10 rounded-full bg-black/40 p-2 backdrop-blur-md hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        className="absolute right-4 top-4 z-10 rounded-full bg-[#fff8ef]/95 p-2 text-[#442c2d] hover:bg-[#ffffff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40"
       >
-        <X aria-hidden="true" className="h-5 w-5 text-white/90" />
+        <X aria-hidden="true" className="h-5 w-5" />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
@@ -122,7 +121,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight text-white", className)}
+    className={cn("text-lg font-semibold leading-none tracking-tight text-[#442c2d]", className)}
     {...props}
   />
 ));
@@ -137,9 +136,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variantClasses = {
-      default: "bg-white text-black hover:bg-white/85",
-      outline: "border border-white/15 bg-transparent text-white hover:bg-white/10",
-      ghost: "bg-transparent text-white hover:bg-white/10",
+      default: "bg-[#442c2d] text-[#fff9f0] hover:bg-[#442c2d]/92",
+      outline:
+        "border border-[#ddcbb6] bg-[#f8efe5]/92 text-[#442c2d] hover:bg-[#fff8ef]",
+      ghost: "bg-transparent text-[#442c2d]/80 hover:bg-[#f0e2d1]",
     };
     const sizeClasses = {
       default: "h-10 px-4 py-2",
@@ -152,7 +152,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={cn(
           "inline-flex items-center justify-center font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-0",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40 focus-visible:ring-offset-0",
           variantClasses[variant],
           sizeClasses[size],
           className,
@@ -180,6 +180,15 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 }) => {
   const [time, setTime] = React.useState(0);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const barStyles = React.useMemo(
+    () =>
+      Array.from({ length: visualizerBars }, (_, i) => ({
+        height: `${15 + ((i * 23) % 70)}%`,
+        animationDelay: `${i * 0.05}s`,
+        animationDuration: `${0.55 + ((i * 7) % 6) * 0.1}s`,
+      })),
+    [visualizerBars],
+  );
 
   React.useEffect(() => {
     if (isRecording) {
@@ -214,18 +223,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     >
       <div className="mb-3 flex items-center gap-2">
         <div className="h-2 w-2 animate-pulse rounded-full bg-red-400 motion-reduce:animate-none" />
-        <span className="font-mono text-sm text-white/80">{formatTime(time)}</span>
+        <span className="font-mono text-sm text-[#442c2d]">{formatTime(time)}</span>
       </div>
       <div className="flex h-10 w-full items-center justify-center gap-0.5 px-4">
-        {[...Array(visualizerBars)].map((_, i) => (
+        {barStyles.map((style, i) => (
           <div
             key={i}
-            className="w-0.5 animate-pulse rounded-full bg-white/60 motion-reduce:animate-none"
-            style={{
-              height: `${Math.max(15, Math.random() * 100)}%`,
-              animationDelay: `${i * 0.05}s`,
-              animationDuration: `${0.5 + Math.random() * 0.5}s`,
-            }}
+            className="w-0.5 animate-pulse rounded-full bg-[#442c2d]/60 motion-reduce:animate-none"
+            style={style}
           />
         ))}
       </div>
@@ -250,7 +255,7 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-2xl border border-white/15 bg-white/[0.05] backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2),0_30px_80px_-20px_rgba(0,0,0,0.6)]"
+          className="relative overflow-hidden rounded-2xl border border-[#e1d1be] bg-[#f5ebdf] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.6)]"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -338,14 +343,9 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
           <div
             ref={ref}
             className={cn(
-              // Liquid-glass recipe: translucent tint + saturated backdrop blur,
-              // hairline rim, stacked inset highlight / shade + soft outer lift.
-              // iOS Control Center recipe: light tint lets color through, strong
-              // saturation pulls the backdrop color into the pane, heavy blur
-              // smooths bokeh. Inset top highlight catches ambient light.
-              "group rounded-3xl border border-white/20 bg-white/[0.10] p-2 backdrop-blur-3xl backdrop-saturate-[200%] transition-colors duration-200",
-              "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35),inset_0_-1px_0_0_rgba(0,0,0,0.2),0_10px_40px_-8px_rgba(0,0,0,0.5)]",
-              "focus-within:border-white/30 focus-within:bg-white/[0.14]",
+              "group rounded-3xl border border-[#e1cfbb] bg-[#f5ebdf]/97 p-2 transition-colors duration-200",
+              "shadow-[0_22px_50px_-22px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,248,239,0.75)]",
+              "focus-within:border-[#442c2d]/35 focus-within:bg-[#fbf4eb]",
               isLoading && "border-red-400/60",
               className,
             )}
@@ -451,7 +451,7 @@ const PromptInputAction: React.FC<PromptInputActionProps> = ({
 const CustomDivider: React.FC = () => (
   <div aria-hidden="true" className="relative mx-1 h-5 w-px">
     <div
-      className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-white/30 to-transparent"
+      className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-[#442c2d]/40 to-transparent"
       style={{
         clipPath:
           "polygon(0% 0%, 100% 0%, 100% 40%, 140% 50%, 100% 60%, 100% 100%, 0% 100%, 0% 60%, -40% 50%, 0% 40%)",
@@ -507,14 +507,14 @@ export const PromptInputBox = React.forwardRef(
 
     const isImageFile = (file: File) => file.type.startsWith("image/");
 
-    const processFile = (file: File) => {
+    const processFile = React.useCallback((file: File) => {
       if (!isImageFile(file)) return;
       if (file.size > 10 * 1024 * 1024) return;
       setFiles([file]);
       const reader = new FileReader();
       reader.onload = (e) => setFilePreviews({ [file.name]: e.target?.result as string });
       reader.readAsDataURL(file);
-    };
+    }, []);
 
     const handleDragOver = React.useCallback((e: React.DragEvent) => {
       e.preventDefault();
@@ -524,12 +524,15 @@ export const PromptInputBox = React.forwardRef(
       e.preventDefault();
       e.stopPropagation();
     }, []);
-    const handleDrop = React.useCallback((e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const dropped = Array.from(e.dataTransfer.files).filter(isImageFile);
-      if (dropped.length > 0) processFile(dropped[0]);
-    }, []);
+    const handleDrop = React.useCallback(
+      (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropped = Array.from(e.dataTransfer.files).filter(isImageFile);
+        if (dropped.length > 0) processFile(dropped[0]);
+      },
+      [processFile],
+    );
 
     const handleRemoveFile = (index: number) => {
       const fileToRemove = files[index];
@@ -539,20 +542,23 @@ export const PromptInputBox = React.forwardRef(
 
     const openImageModal = (imageUrl: string) => setSelectedImage(imageUrl);
 
-    const handlePaste = React.useCallback((e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf("image") !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
-            e.preventDefault();
-            processFile(file);
-            break;
+    const handlePaste = React.useCallback(
+      (e: ClipboardEvent) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf("image") !== -1) {
+            const file = items[i].getAsFile();
+            if (file) {
+              e.preventDefault();
+              processFile(file);
+              break;
+            }
           }
         }
-      }
-    }, []);
+      },
+      [processFile],
+    );
     React.useEffect(() => {
       document.addEventListener("paste", handlePaste);
       return () => document.removeEventListener("paste", handlePaste);
@@ -610,7 +616,7 @@ export const PromptInputBox = React.forwardRef(
                 <div key={index} className="group relative">
                   {file.type.startsWith("image/") && filePreviews[file.name] && (
                     <div
-                      className="h-16 w-16 cursor-pointer overflow-hidden rounded-xl border border-white/10"
+                      className="h-16 w-16 cursor-pointer overflow-hidden rounded-xl border border-[#e0ceba]"
                       onClick={() => openImageModal(filePreviews[file.name])}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -626,9 +632,9 @@ export const PromptInputBox = React.forwardRef(
                           e.stopPropagation();
                           handleRemoveFile(index);
                         }}
-                        className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 backdrop-blur-md hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                        className="absolute right-1 top-1 rounded-full bg-[#fff8ef] p-0.5 text-[#442c2d] hover:bg-[#ffffff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40"
                       >
-                        <X aria-hidden="true" className="h-3 w-3 text-white" />
+                        <X aria-hidden="true" className="h-3 w-3" />
                       </button>
                     </div>
                   )}
@@ -672,7 +678,7 @@ export const PromptInputBox = React.forwardRef(
                   aria-label="Upload image"
                   onClick={() => uploadInputRef.current?.click()}
                   disabled={isRecording}
-                  className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full text-[#442c2d]/80 transition-colors hover:bg-[#f0e2d1] hover:text-[#442c2d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40"
                 >
                   <Paperclip aria-hidden="true" className="h-[27px] w-[27px]" />
                   <input
@@ -697,10 +703,10 @@ export const PromptInputBox = React.forwardRef(
                   onClick={() => handleToggleChange("search")}
                   className={cn(
                     "flex h-12 items-center gap-1.5 rounded-full border px-3 py-1 transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40",
                     showSearch
-                      ? "border-sky-300/60 bg-sky-300/15 text-sky-200"
-                      : "border-transparent bg-transparent text-white/70 hover:bg-white/10 hover:text-white",
+                      ? "border-[#442c2d] bg-[#e7d2b8] text-[#442c2d]"
+                      : "border-transparent bg-transparent text-[#442c2d]/80 hover:bg-[#f0e2d1] hover:text-[#442c2d]",
                   )}
                 >
                   <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center">
@@ -740,10 +746,10 @@ export const PromptInputBox = React.forwardRef(
                   onClick={() => handleToggleChange("think")}
                   className={cn(
                     "flex h-12 items-center gap-1.5 rounded-full border px-3 py-1 transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40",
                     showThink
-                      ? "border-violet-300/60 bg-violet-300/15 text-violet-200"
-                      : "border-transparent bg-transparent text-white/70 hover:bg-white/10 hover:text-white",
+                      ? "border-[#442c2d] bg-[#e7d2b8] text-[#442c2d]"
+                      : "border-transparent bg-transparent text-[#442c2d]/80 hover:bg-[#f0e2d1] hover:text-[#442c2d]",
                   )}
                 >
                   <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center">
@@ -784,10 +790,10 @@ export const PromptInputBox = React.forwardRef(
                 className={cn(
                   "h-12 w-12 rounded-full transition-colors duration-200",
                   isRecording
-                    ? "bg-white/10 text-red-400 hover:bg-white/15"
+                    ? "bg-[#e7d2b8] text-red-800 hover:bg-[#f0deca]"
                     : hasContent
-                      ? "bg-white text-black hover:bg-white/85"
-                      : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white",
+                      ? "bg-[#442c2d] text-[#fff9f0] hover:bg-[#442c2d]/92"
+                      : "bg-[#e7d2b8] text-[#442c2d]/80 hover:bg-[#f0deca] hover:text-[#442c2d]",
                 )}
                 onClick={() => {
                   if (isRecording) setIsRecording(false);
@@ -797,7 +803,10 @@ export const PromptInputBox = React.forwardRef(
                 disabled={isLoading && !hasContent}
               >
                 {isLoading ? (
-                  <Square aria-hidden="true" className="h-[27px] w-[27px] animate-pulse fill-black motion-reduce:animate-none" />
+                  <Square
+                    aria-hidden="true"
+                    className="h-[27px] w-[27px] animate-pulse fill-[#fff9f0] motion-reduce:animate-none"
+                  />
                 ) : isRecording ? (
                   <StopCircle aria-hidden="true" className="h-[30px] w-[30px]" />
                 ) : hasContent ? (

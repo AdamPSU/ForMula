@@ -33,11 +33,11 @@ const SIGN_UP = {
   passwordAutoComplete: "new-password",
 } as const;
 
-const glassWrapper =
-  "rounded-2xl border border-white/15 bg-white/5 backdrop-blur-sm transition-colors focus-within:border-white/40 focus-within:bg-white/10";
+const inputWrapper =
+  "rounded-2xl border border-[#dfccb7] bg-[#f5ebdf]/96 shadow-[0_18px_40px_-22px_rgba(0,0,0,0.45),inset_0_1px_0_0_rgba(255,248,239,0.7)] transition-colors focus-within:border-[#442c2d]/35 focus-within:bg-[#fbf4eb]";
 
 const inputBase =
-  "w-full bg-transparent p-4 text-base text-white placeholder:text-white/30 focus:outline-none";
+  "w-full bg-transparent p-4 text-base text-[#442c2d] placeholder:text-[#442c2d]/55 focus:outline-none";
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
@@ -102,7 +102,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           style={{ animationDelay: "200ms" }}
         >
           <span className="text-sm text-white/60">email</span>
-          <div className={glassWrapper}>
+          <div className={inputWrapper}>
             <input
               type="email"
               required
@@ -120,7 +120,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           style={{ animationDelay: "300ms" }}
         >
           <span className="text-sm text-white/60">password</span>
-          <div className={glassWrapper}>
+          <div className={inputWrapper}>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -136,7 +136,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 aria-label={showPassword ? "hide password" : "show password"}
-                className="absolute inset-y-0 right-3 flex items-center text-white/50 transition-colors hover:text-white/90"
+                className="absolute inset-y-0 right-3 flex items-center text-[#442c2d]/60 transition-colors hover:text-[#442c2d]"
               >
                 {showPassword ? (
                   <EyeOff className="size-5" />
@@ -154,7 +154,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           </p>
         )}
         {info && (
-          <p role="status" className="text-sm text-white/80">
+          <p role="status" className="text-sm text-[#f5ebdf]">
             {info}
           </p>
         )}
@@ -162,7 +162,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <button
           type="submit"
           disabled={pending}
-          className="rise mt-1 w-full rounded-full bg-white py-4 text-base font-medium text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rise mt-1 w-full rounded-full bg-[#f5ebdf] py-4 text-base font-medium text-[#442c2d] transition hover:bg-[#fff6ed] disabled:cursor-not-allowed disabled:opacity-60"
           style={{ animationDelay: "400ms" }}
         >
           {pending ? "…" : copy.cta}

@@ -130,3 +130,20 @@ After a real failure or user correction, append a bullet to
 Skip anything already documented here or obvious from tool output.
 
 @references/LESSONS.md
+
+## Ingredient tagging
+
+Standalone workflow against the existing `products` table — populates
+the `ingredients` registry that the reranker consumes. Independent of
+any scrape job. Full operator manual:
+
+@references/INGREDIENT-TAGGING.md
+
+## Rerank doc generation
+
+Standalone workflow that produces one positives-only YAML doc per
+product (`raw_doc` + `rerank_doc` columns), optimized for Cohere
+Rerank 4. Depends on the ingredient registry being fully tagged.
+Independent of any scrape job. Full operator manual:
+
+@references/RERANK-DOCS.md

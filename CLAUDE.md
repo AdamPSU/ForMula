@@ -19,7 +19,7 @@ Match users to hair-care products by ingredient list (INCI), not marketing copy.
   - `lib/utils.ts` — `cn()` only
   - `public/curl-types/` — 12 reference images (1a–4c) for the quiz
 - `src/backend/` — Python 3.12, FastAPI, uv. asyncpg direct (no ORM).
-  - `scraper/` — Firecrawl + LLM product scraper (autonomous CLI agent). **Has its own `CLAUDE.md` — defer to it for any scraper work.**
+  - `scraper/` — Firecrawl + LLM product scraper, plus the ingredient-tagging workflow that populates `ingredients` from already-scraped `products` (autonomous CLI agent). **Has its own `CLAUDE.md` — defer to it for any scraper or ingredient-tagging work.**
   - `db/supabase/migrations/` — SQL migrations, timestamped `<YYYYMMDDHHMMSS>_*.sql`
   - `auth/jwt.py` — `get_current_user_id` FastAPI dep. Verifies the Supabase JWT against the project JWKS (asymmetric ES256), 1h cache. Source for any future authenticated endpoint.
   - `profiles/` — `data/quiz.json` (the quiz definition), `models.py` (Pydantic `HairProfile`), `repository.py` (asyncpg `insert_hair_intake`/`get_latest_hair_profile`), `api.py` (`POST`/`GET /me/hair-profile`).
@@ -58,3 +58,6 @@ Match users to hair-care products by ingredient list (INCI), not marketing copy.
 - Don't add fallbacks, defaults, or backward-compat shims unless asked. Break cleanly, clear stale data, document the wipe.
 - Per-row autocommit after every paid external call (Firecrawl, LLM) — never batch paid writes in one transaction.
 - LLM-first, schema-driven extraction (Pydantic → Firecrawl JSON schema). Never hand-write CSS selectors.
+
+## Agentic work
+- **Before touching any agentic / LangGraph code in this repo, invoke the `/langgraph` skill.** This includes anything under `backend/ai/` that uses `StateGraph`, `Command`, `Send`, `interrupt`, `Runtime[Context]`, checkpointers, or stores — whether you are creating a new graph, adding a node, changing routing, or debugging an existing one. Load the skill first; do not work from memory of prior sessions.
