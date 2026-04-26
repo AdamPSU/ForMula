@@ -361,6 +361,7 @@ FunctionTag = Literal[
     "exfoliant", "antioxidant", "ceramide",
     # Targeted actives
     "heat_protectant", "uv_filter", "antidandruff",
+    "bond_builder", "hair_growth_active", "barrier_active",
     # Catch-all
     "other",
 ]
@@ -448,8 +449,8 @@ class RerankDocFacets(BaseModel):
         default_factory=list,
         description=(
             "Porosity-by-absorption fit. Map: soaks=high porosity, "
-            "sits=low porosity, greasy=low porosity with oily-scalp "
-            "compatibility, unsure=omit."
+            "medium=balanced absorption, sits=low porosity, greasy=low "
+            "porosity with oily-scalp compatibility, unsure=omit."
         ),
     )
     climate_fit: list[Climate] = Field(

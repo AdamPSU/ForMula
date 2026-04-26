@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "questions": [
     {
       "id": "curl_pattern",
@@ -97,6 +97,7 @@
       "maps_to": "product_absorption",
       "options": [
         {"id": "soaks", "label": "It soaks in quickly"},
+        {"id": "medium", "label": "It absorbs evenly without sitting or soaking"},
         {"id": "sits", "label": "It mostly sits on top"},
         {"id": "greasy", "label": "Hair gets greasy quickly"},
         {"id": "unsure", "label": "I can't tell"}

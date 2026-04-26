@@ -28,3 +28,4 @@ class FilterResponse(BaseModel):
     sql: str
     params: list[Any]
     reranked: bool
+    judged: bool = False

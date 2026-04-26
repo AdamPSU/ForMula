@@ -14,7 +14,7 @@ Concern = Literal[
 Goal = Literal[
     "definition", "volume", "strength", "length", "scalp_health", "shine",
 ]
-ProductAbsorption = Literal["soaks", "sits", "greasy", "unsure"]
+ProductAbsorption = Literal["soaks", "medium", "sits", "greasy", "unsure"]
 WashFrequency = Literal["daily", "2_3_days", "weekly", "less"]
 Climate = Literal["humid", "dry", "cold", "mixed"]
 

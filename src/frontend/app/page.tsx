@@ -23,7 +23,12 @@ export default function Home() {
         className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent"
       />
 
-      <SiteNav trail={[{ label: "info", href: "/info" }]} />
+      <SiteNav
+        trail={[
+          { label: "info", href: "/info" },
+          { label: "hair quiz", href: "/quiz" },
+        ]}
+      />
 
       <section
         className="relative z-10 mx-auto flex min-h-screen max-w-[2160px] flex-col px-6 pb-10 md:px-12 md:pb-14 lg:px-20"

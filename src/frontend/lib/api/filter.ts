@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
 
+export const RESULTS_STORAGE_KEY = "formula:last-result";
+
+export type StoredResult = {
+  query: string;
+  result: FilterResponse;
+};
+
 export type FilterProduct = {
   id: string;
   name?: string | null;
@@ -12,6 +19,14 @@ export type FilterProduct = {
   brand_id?: string | null;
   relevance_score?: number;
   rank?: number;
+  // Judge stage (present when response.judged === true)
+  overall_score?: number;
+  axis_scores?: Record<string, number>;
+  bools?: Record<string, boolean>;
+  evidence?: Record<string, string>;
+  reasoning?: Record<string, string>;
+  summary?: string;
+  active_criteria?: string[];
   [key: string]: unknown;
 };
 
@@ -21,6 +36,7 @@ export type FilterResponse = {
   sql: string;
   params: unknown[];
   reranked: boolean;
+  judged: boolean;
 };
 
 export async function runFilter(text: string): Promise<FilterResponse> {

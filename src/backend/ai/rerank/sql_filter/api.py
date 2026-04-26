@@ -19,6 +19,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from ai.judge import score_many
 from ai.rerank.cohere import rerank
 from ai.rerank.sql_filter.graph import FilterContext, graph
 from ai.rerank.sql_filter.log import log_from_state
@@ -29,6 +30,7 @@ from profiles.repository import get_latest_hair_profile
 router = APIRouter(tags=["filter"])
 
 _TOP_K = 150
+_JUDGE_TOP_N = 100
 
 
 @router.post("/filter")
@@ -95,15 +97,53 @@ async def filter_products(
                 status.HTTP_502_BAD_GATEWAY, "rerank failed"
             ) from exc
 
+    # Conn released. Judge stage runs against the pool, not a held conn.
+    try:
+        judgments, _metrics = await score_many(
+            pool, profile, payload.text, scored, judge_top_n=_JUDGE_TOP_N
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "judge failed"
+        ) from exc
+
     by_id = {p["id"]: p for p in products}
-    ordered: list[dict] = []
-    for s in scored:
-        product = by_id.get(s.product_id)
+
+    if not judgments:
+        # Every product failed the judge (or no judgable candidates).
+        # Fall back to the Cohere ordering with judged=False so the
+        # operator notices something is wrong.
+        ordered: list[dict] = []
+        for s in scored:
+            product = by_id.get(s.product_id)
+            if product is None:
+                continue
+            ordered.append({
+                **product,
+                "relevance_score": s.relevance_score,
+                "rank": s.rank,
+            })
+        return FilterResponse(
+            products=ordered, count=len(ordered),
+            sql=state["sql"], params=state["params"] or [],
+            reranked=True, judged=False,
+        )
+
+    cohere_by_id = {s.product_id: s for s in scored}
+    ordered = []
+    for j in judgments:
+        product = by_id.get(j.product_id)
         if product is None:
             continue
-        ordered.append(
-            {**product, "relevance_score": s.relevance_score, "rank": s.rank}
-        )
+        cohere = cohere_by_id.get(j.product_id)
+        ordered.append({
+            **product,
+            "relevance_score": cohere.relevance_score if cohere else None,
+            "rank": cohere.rank if cohere else None,
+            "overall_score": j.overall_score,
+            "tournament_points": j.tournament_points,
+            "final_rank": j.final_rank,
+        })
 
     return FilterResponse(
         products=ordered,
@@ -111,4 +151,5 @@ async def filter_products(
         sql=state["sql"],
         params=state["params"] or [],
         reranked=True,
+        judged=True,
     )
