@@ -27,9 +27,11 @@ from uuid import UUID
 
 import openai
 
-from ai.judge.client import MODEL, get_client
+from ai._xai import get_xai_client
 from ai.judge.prompt import build_selection_prompt
 from ai.judge.schema import Selection
+
+MODEL = "grok-4-1-fast-non-reasoning"
 
 if TYPE_CHECKING:
     from ai.judge.log import _RunAccumulator
@@ -80,7 +82,7 @@ async def _call_llm(system: str, user: str) -> tuple[Selection, str]:
     Raises ValidationError on schema mismatch, openai.* on network /
     429 / 5xx, or other Exception on auth / quota / invalid-request.
     """
-    client = get_client()
+    client = get_xai_client()
     resp = await client.chat.completions.create(
         model=MODEL,
         messages=[

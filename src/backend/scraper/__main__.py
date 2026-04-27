@@ -14,12 +14,13 @@ from dotenv import load_dotenv
 
 from .db import close
 from .tools import (
+    audit,
     budget,
     catalog,
     debug,
-    descriptions,
+    discovery,
+    enrichment,
     filter as filter_tool,
-    ingredients,
     pipeline,
 )
 from .validation import render_migration
@@ -29,7 +30,16 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="scraper")
     s = p.add_subparsers(dest="cmd", required=True)
 
-    s.add_parser("list-brands")
+    lb = s.add_parser("list-brands")
+    lb.add_argument(
+        "--slug",
+        help="Look up one brand by slug; returns the full row.",
+    )
+    lb.add_argument(
+        "--without-seed",
+        action="store_true",
+        help="Return slugs of active brands that still need a seed_url (the discovery worklist).",
+    )
 
     cb = s.add_parser("create-brand")
     cb.add_argument("--slug", required=True)
@@ -56,6 +66,11 @@ def _build_parser() -> argparse.ArgumentParser:
     lp.add_argument("--job-id", required=True)
     lp.add_argument("--status")
     lp.add_argument("--limit", type=int, default=100)
+    lp.add_argument(
+        "--show-rows",
+        action="store_true",
+        help="Include the row list (id/url/status/truncated error). Default returns counts only.",
+    )
 
     gjs = s.add_parser("get-job-stats")
     gjs.add_argument("--job-id", required=True)
@@ -80,10 +95,6 @@ def _build_parser() -> argparse.ArgumentParser:
     sp_cmd.add_argument("--brand-id", required=True)
     sp_cmd.add_argument("--urls-file", required=True)
 
-    rx = s.add_parser("run-extraction")
-    rx.add_argument("--job-id", required=True)
-    rx.add_argument("--batch-size", type=int, default=50)
-
     s.add_parser("check-budget")
 
     ds = s.add_parser("dump-schema")
@@ -93,42 +104,28 @@ def _build_parser() -> argparse.ArgumentParser:
         default="products",
     )
 
-    lu = s.add_parser("list-untagged")
-    lu.add_argument("--out-file", required=True)
-    lu.add_argument("--limit", type=int)
-
-    li = s.add_parser("lookup-ingredient")
-    li.add_argument("--name", required=True)
-
-    tb = s.add_parser("tag-batch")
-    tb.add_argument("--file", required=True)
-
-    s.add_parser("tag-status")
-
-    lwd = s.add_parser("list-without-doc")
-    lwd.add_argument("--out-file", required=True)
-    lwd.add_argument("--limit", type=int)
-
-    gd = s.add_parser("generate-docs")
-    gd.add_argument("--in-file", required=True)
-
-    s.add_parser("doc-status")
-
-    ip = s.add_parser("inspect-product")
-    ip.add_argument("--url", required=True)
-    ip.add_argument(
-        "--full",
-        action="store_true",
-        help="Also return raw page markdown (10-50K tokens). Use only when "
-        "the structured extraction looks off and you want to read the page.",
-    )
-
     rf = s.add_parser("retry-failed")
     rf.add_argument("--job-id", required=True)
 
-    fn = s.add_parser("finish")
-    fn.add_argument("--job-id", required=True)
-    fn.add_argument("--summary", required=True)
+    das = s.add_parser("discover-and-stage")
+    das.add_argument("--brand-id", required=True)
+    das.add_argument("--index-url", required=True)
+    das.add_argument(
+        "--max-pages",
+        type=int,
+        default=5,
+        help="Stop paginating after this many pages (cap on discovery credits).",
+    )
+
+    raf = s.add_parser("run-and-finish")
+    raf.add_argument("--job-id", required=True)
+
+    awu = s.add_parser("audit-website-urls")
+    awu.add_argument(
+        "--apply",
+        action="store_true",
+        help="Write canonical apex URLs back to brands. Default is dry-run.",
+    )
 
     return p
 
@@ -136,7 +133,7 @@ def _build_parser() -> argparse.ArgumentParser:
 async def _dispatch(args: argparse.Namespace):
     match args.cmd:
         case "list-brands":
-            return await catalog.list_brands()
+            return await catalog.list_brands(args.slug, args.without_seed)
         case "create-brand":
             return await catalog.create_brand(
                 args.slug, args.name, args.website_url, args.seed_url
@@ -155,7 +152,9 @@ async def _dispatch(args: argparse.Namespace):
                 args.error,
             )
         case "list-products":
-            return await catalog.list_products(args.job_id, args.status, args.limit)
+            return await catalog.list_products(
+                args.job_id, args.status, args.limit, args.show_rows
+            )
         case "get-job-stats":
             return await catalog.get_job_stats(args.job_id)
         case "list-site-urls":
@@ -170,30 +169,18 @@ async def _dispatch(args: argparse.Namespace):
             )
         case "stage-products":
             return await pipeline.stage_products(args.job_id, args.brand_id, args.urls_file)
-        case "run-extraction":
-            return await pipeline.run_extraction(args.job_id, args.batch_size)
         case "check-budget":
             return await budget.check_budget()
-        case "list-untagged":
-            return await ingredients.list_untagged(args.out_file, args.limit)
-        case "lookup-ingredient":
-            return await ingredients.lookup_ingredient(args.name)
-        case "tag-batch":
-            return await ingredients.tag_batch(args.file)
-        case "tag-status":
-            return await ingredients.tag_status()
-        case "list-without-doc":
-            return await descriptions.list_without_doc(args.out_file, args.limit)
-        case "generate-docs":
-            return await descriptions.generate_docs(args.in_file)
-        case "doc-status":
-            return await descriptions.doc_status()
-        case "inspect-product":
-            return await debug.inspect_product(args.url, args.full)
         case "retry-failed":
             return await debug.retry_failed(args.job_id)
-        case "finish":
-            return await debug.finish(args.job_id, args.summary)
+        case "discover-and-stage":
+            return await discovery.discover_and_stage(
+                args.brand_id, args.index_url, args.max_pages
+            )
+        case "run-and-finish":
+            return await enrichment.run_and_finish(args.job_id)
+        case "audit-website-urls":
+            return await audit.audit_website_urls(args.apply)
         case _:
             raise SystemExit(f"unknown command: {args.cmd}")
 
@@ -201,7 +188,12 @@ async def _dispatch(args: argparse.Namespace):
 async def _run(args: argparse.Namespace) -> None:
     try:
         result = await _dispatch(args)
-        print(json.dumps(result, default=str, indent=2))
+        # Compact JSON (no indent) — agents parse it identically and it
+        # halves the bytes the harness re-reads on every tick. `None`
+        # results from ack-only verbs print nothing; the exit code (0)
+        # signals success.
+        if result is not None:
+            print(json.dumps(result, default=str))
     finally:
         await close()
 
@@ -217,7 +209,7 @@ def main() -> None:
     try:
         asyncio.run(_run(args))
     except Exception as e:
-        print(json.dumps({"error": f"{type(e).__name__}: {e}"}, indent=2))
+        print(json.dumps({"error": f"{type(e).__name__}: {e}"}))
         sys.exit(1)
 
 

@@ -5,7 +5,7 @@ import os
 import tempfile
 from collections import deque
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from firecrawl import AsyncFirecrawl
 from firecrawl.v2.utils.error_handler import RateLimitError
@@ -14,6 +14,35 @@ from pydantic import ValidationError
 from ..db import connection, get_pool
 from ..prompts import EXTRACT_PROMPT
 from ..validation import ProductExtraction, check_db_drift
+
+
+# Query params that vary per-variant or per-tracking-pixel without
+# changing the underlying product page. Stripping them at URL ingest
+# avoids staging the same product twice when the index page emits
+# multiple href variants (Demandware ?dwvar_*, Shopify ?variant=,
+# email/UTM tracking, etc.).
+_NOISE_QUERY_PREFIXES = ("dwvar_", "utm_", "mc_")
+_NOISE_QUERY_KEYS = {
+    "variant", "variant_id", "_pos", "_sid", "_ss", "_psq", "_v",
+    "fbclid", "gclid", "yclid", "msclkid", "cid", "ref", "quantity",
+}
+
+
+def _normalize_url(url: str) -> str | None:
+    """Strip URL fragment and known noise query params. Returns None
+    for inputs that don't parse as http(s). Idempotent."""
+    try:
+        parts = urlparse(url)
+    except Exception:
+        return None
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        return None
+    keep = [
+        (k, v) for k, v in parse_qsl(parts.query, keep_blank_values=False)
+        if k not in _NOISE_QUERY_KEYS
+        and not any(k.startswith(p) for p in _NOISE_QUERY_PREFIXES)
+    ]
+    return urlunparse(parts._replace(query=urlencode(keep), fragment=""))
 
 
 def _client() -> AsyncFirecrawl:
@@ -89,18 +118,33 @@ async def list_site_urls(
 
 async def list_page_links(url: str, out_file: str) -> dict:
     fc = _client()
-    doc = await fc.scrape(url, formats=["links"])
+    # wait_for=2000 gives JS-rendered Shopify storefronts (Hairlust,
+    # CHI, etc.) ~2s to inject product anchors before we read links.
+    # Without this many catalogs return only the homepage URL.
+    # Only applied here in discovery — product-page extraction reads
+    # INCI from static HTML and pays no JS-render cost.
+    doc = await fc.scrape(url, formats=["links"], wait_for=2000)
     raw = getattr(doc, "links", None) or []
-    new_links = [
-        l for link in raw
-        if (l := (link if isinstance(link, str) else _url_of(link)))
-        and _same_host(l, url)
-        and l.rstrip("/") != url.rstrip("/")
-    ]
+    new_links: list[str] = []
+    for link in raw:
+        l = link if isinstance(link, str) else _url_of(link)
+        if not l:
+            continue
+        normalized = _normalize_url(l)
+        if normalized is None:
+            continue
+        if not _same_host(normalized, url):
+            continue
+        if normalized.rstrip("/") == _normalize_url(url).rstrip("/"):
+            continue
+        new_links.append(normalized)
     # Union with any prior content of out_file so paginated calls
     # (?page=1, ?page=2, ...) accumulate into the same file. Dedupe
-    # preserves insertion order: existing first, then new.
-    existing = _read_existing_urls(out_file)
+    # preserves insertion order: existing first, then new. Existing
+    # entries are re-normalized in case the file was written under an
+    # older normalization rule.
+    existing = [_normalize_url(u) for u in _read_existing_urls(out_file)]
+    existing = [u for u in existing if u is not None]
     seen: set[str] = set(existing)
     merged = list(existing)
     for l in new_links:
@@ -118,11 +162,16 @@ async def list_page_links(url: str, out_file: str) -> dict:
 async def stage_products(job_id: str, brand_id: str, urls_file: str) -> dict:
     path = Path(urls_file)
     raw = [line.strip() for line in path.read_text().splitlines()]
-    urls = [
-        u for u in raw
-        if u and urlparse(u).scheme in ("http", "https")
-    ]
-    # dedupe while preserving order
+    # Re-normalize at stage time so a file produced before normalization
+    # was tightened can't sneak fragment / variant duplicates into the
+    # `pending` set (each duplicate would burn 5 credits at extraction).
+    urls: list[str] = []
+    for u in raw:
+        if not u:
+            continue
+        normalized = _normalize_url(u)
+        if normalized is not None:
+            urls.append(normalized)
     seen: set[str] = set()
     deduped: list[str] = []
     for u in urls:

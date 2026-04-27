@@ -17,7 +17,7 @@ cases instead of stripping the rule.
 - **DNS first.** `dig <apex>`. SERVFAIL → don't park. The fix is rarely a TLD swap; the canonical domain may share zero tokens with the brand name (e.g. a brand operating under a generic category domain like `naturalhair.org`). `WebSearch "<brand> official website DTC"`.
 - **Resolve cross-domain redirects.** `curl -I <apex>`. Firecrawl doesn't follow cross-domain 301s, so `list-page-links` on the old path returns `[]` while the new host serves a healthy storefront. Always chase the `Location` header.
 - **GoDaddy / parked-lander detection.** When `list-site-urls` surfaces only 1–2 URLs and one is `/lander`, `curl` the root and grep for `parking|wsimg.com/parking-lander|LANDER_SYSTEM`. Apex resolves and serves 200, it's just been repossessed; the real brand often lives on a hyphenated/alt variant.
-- **Brand-name collision on short TLDs.** Short `.co` / `.io` apexes collide with VC-backed startups in unrelated industries (food, fintech, SaaS). When `list-site-urls` returns ≤3 URLs and none contain `/products|/shop|/collections|/store`, `inspect-product` the root before parking — if rendered markdown is unrelated to hair/beauty, search for `hello<brand>.com` / `<brand>beauty.com` / `<brand>haircare.com`.
+- **Brand-name collision on short TLDs.** Short `.co` / `.io` apexes collide with VC-backed startups in unrelated industries (food, fintech, SaaS). When `list-site-urls` returns ≤3 URLs and none contain `/products|/shop|/collections|/store`, `WebFetch` the root before parking — if the rendered page is unrelated to hair/beauty, search for `hello<brand>.com` / `<brand>beauty.com` / `<brand>haircare.com`.
 - **Unrelated business on a name-matching domain.** Sometimes the apex resolves to a real but unrelated business (a salon, an agency). Symptom: `list-site-urls` returns only services pages; `list-page-links` on `/collections/all` returns 0 product links. Same fix as collision: confirm rendered content matches the brand, then search for the real domain.
 - **Marketing-only apex with a parent conglomerate.** Legacy salon brands (Henkel/Zotos, L'Oréal Pro, P&G Pro, Kao/Goldwell, Shiseido Pro, Revlon Pro) routinely park their eponymous domain as a 1–2 page marketing landing while the real catalog lives at `{parent-storefront}/collections/<brand-slug>` (e.g. `zotosprofessional.com/collections/<slug>`). Always check parent-storefront before applying the "no DTC → park" rule. Do not conflate "no DTC on the brand's own site" with "no INCI anywhere."
 
@@ -37,16 +37,23 @@ The skip side is not the only place misclassifications hide. Always eyeball the 
 - **Accessory tokens.** Grep `keep` for `towel|brush|comb|filter`. URL-encoded unicode in slugs (e.g. TM symbol `%E2%84%A2`) flips classifications — a sibling URL without the encoding can be correctly skipped while the encoded one is kept.
 - **Generic-noun bundle slugs.** Slugs like `/products/volume-fullness`, `/products/hydration-X`, `/products/strength-Y` on brands that visibly push bundles can be 3-product bundles dressed up as PDPs. The classifier has no lexical signal because there's no `bundle|kit|set|duo` token. `curl` the page and grep `<title>` for those tokens before staging.
 
-## Preflight: trust `no_inci_text`
+## Bot-blocked storefronts: detect via markdown sample, fall back to sitemap
 
-`inspect-product` returns `extraction_attempt.no_inci_text` — the LLM's own boolean verdict on whether this page yielded a real INCI list. It's the single principled signal:
+When `list-page-links` returns 1–2 URLs and the only link is the apex itself, the page may be serving Firecrawl an anti-bot challenge instead of the catalog. Confirm by scraping the same URL with `formats=["markdown"]` (also via Firecrawl, no extra credits if you change formats not URL): if the markdown reads like `"There was a problem loading this website"` or contains a CAPTCHA / "Just a moment" / "Refresh page" phrase, it's bot-blocked.
 
-- `False` → real INCI list extracted; proceed.
-- `True` → no usable INCI on this URL, for any reason (wrong page type, image-only, B2B login, Cloudflare block, marketing-callout-only). Try another URL from the keep file. Two consecutive `True` results on different product URLs → park the brand.
+Fallback: parse the brand's `sitemap.xml` directly via `curl` (no Firecrawl credits). On Shopify the index lives at `/sitemap.xml` and points to `/sitemap_products_N.xml`; extract `<loc>` entries matching `/products/` and feed them to `filter-links` instead of going through `list-page-links`. CHI Haircare, Hairlust, and other Cloudflare-protected storefronts all need this path.
 
-Trust the verdict. Don't bolt on hallucination audits or token-vs-markdown diffs — the rare false positive isn't worth defensive scaffolding that adds tokens to every probe.
+Don't reach for `proxy="enhanced"` (5× per-call cost) before trying sitemap — most bot-blocked Shopify stores still expose the canonical XML sitemap publicly.
 
-**Escape hatch:** `inspect-product --url <u> --full` adds raw markdown (10–50K tokens). Use only when `no_inci_text=True` contradicts something obvious — e.g. you can see in `--full` that there IS an INCI block Firecrawl's LLM missed.
+## First-batch auto-park: trust `no_inci_text`
+
+`run-and-finish`'s extraction loop reads each scrape's `no_inci_text` — the LLM's own verdict on whether the page yielded a real INCI list. If the FIRST batch returns 0 successes and ≥5 `no_inci_text=True` rows, the orchestrator parks the brand (`active=false`) and marks the job `failed`. Caps wasted spend at ~25 credits per dead brand.
+
+When `run-and-finish` returns `aborted=true, brand_parked=true`, the domain doesn't extract under the current discovery plan. Either:
+- The discovery seed was wrong (parked lander, wrong TLD, B2B-only catalog) — re-investigate per the discovery sections above.
+- The brand genuinely doesn't disclose INCI (image-only labels, B2B login wall) — leave parked, look for a parent-conglomerate storefront per the marketing-only-apex rule above.
+
+Trust the verdict. The early-abort threshold is intentionally permissive (5 `missing` rows on the first batch); a flaky one-off won't trip it.
 
 ## Salvage: per-line pruning beats all-or-nothing park
 

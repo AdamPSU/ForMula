@@ -12,13 +12,10 @@ can correct its previous output.
 
 from __future__ import annotations
 
-import os
-from functools import cache
 from pathlib import Path
 from typing import get_args
 
-from openai import AsyncOpenAI
-
+from ai._xai import get_xai_client
 from ai.rerank.sql_filter.models import WriterOutput
 from scraper.validation.models import (
     HairProductCategory,
@@ -41,15 +38,6 @@ _SYSTEM_PROMPT = _PROMPT_TEMPLATE.format(
 _SCHEMA = WriterOutput.model_json_schema()
 
 
-# Lazy so importing this module without XAI_API_KEY (tests, tooling) doesn't blow up.
-@cache
-def _client() -> AsyncOpenAI:
-    return AsyncOpenAI(
-        api_key=os.environ["XAI_API_KEY"],
-        base_url="https://api.x.ai/v1",
-    )
-
-
 async def call_writer(
     user_text: str,
     prior_sql: str | None,
@@ -68,7 +56,7 @@ async def call_writer(
     else:
         user_msg = user_text
 
-    resp = await _client().chat.completions.create(
+    resp = await get_xai_client().chat.completions.create(
         model=_MODEL,
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},

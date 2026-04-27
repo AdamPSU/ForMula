@@ -1,12 +1,15 @@
 """Rerank-doc generation — produce one positives-only YAML doc per
-product for the runtime Cohere Rerank pass. Three subcommands wired
-into `__main__.py`:
+product for the runtime Cohere Rerank pass.
 
-  list-without-doc → JSONL bundles for products needing generation
-  generate-docs    → Grok call per row, render YAML, autocommit
-  doc-status       → counts + sample rendered docs
+Doc generation fires automatically at the end of `run-and-finish` per
+brand (orchestrated from `tools/enrichment.py`). The agent never sees
+bundles or rendered YAML.
 
-Workflow lives in `scraper/references/RERANK-DOCS.md`.
+Per-call flow inside `generate_docs_for_brand`:
+  1. Pull this brand's success rows that have INCI but no rerank_doc.
+  2. Build self-contained bundles (id/name/description/category/INCI
+     pre-tagged from `ingredients`).
+  3. Fan out under Semaphore(256): Grok → render YAML → autocommit.
 """
 
 import asyncio
@@ -222,25 +225,36 @@ def _truncate_log() -> None:
 # ─── Subcommands ──────────────────────────────────────────────────────
 
 
-async def list_without_doc(out_file: str, limit: int | None) -> dict:
-    """Write JSONL bundles for products that need rerank-doc generation.
-
-    Each line is a fully self-contained input for the generator:
+async def _build_bundles(brand_id: str | None = None) -> list[dict]:
+    """Pull products that need a rerank doc, JOIN against the
+    ingredients table to assemble self-contained generator inputs:
       {id, name, description, subcategory, category,
        ingredients: [{inci_name, function_tag}, ...]}
 
-    The ingredients list is JOIN-ed against `ingredients` in label order,
-    so the generator never re-queries the DB for tags.
+    `brand_id` scopes to one brand (used by the per-brand auto-fire
+    path). When None, returns every eligible product across the whole
+    catalog.
     """
     async with connection() as conn:
         await _check_columns_exist(conn)
-        product_rows = await conn.fetch(
-            """select id, name, description, subcategory, category, ingredient_text
-               from products
-               where rerank_doc       is null
-                 and ingredient_text  is not null
-                 and scrape_status    = 'success'"""
-        )
+        if brand_id is None:
+            product_rows = await conn.fetch(
+                """select id, name, description, subcategory, category, ingredient_text
+                   from products
+                   where rerank_doc       is null
+                     and ingredient_text  is not null
+                     and scrape_status    = 'success'"""
+            )
+        else:
+            product_rows = await conn.fetch(
+                """select id, name, description, subcategory, category, ingredient_text
+                   from products
+                   where rerank_doc       is null
+                     and ingredient_text  is not null
+                     and scrape_status    = 'success'
+                     and brand_id        = $1::uuid""",
+                brand_id,
+            )
         ingredient_rows = await conn.fetch(
             "select inci_name, function_tags from ingredients"
         )
@@ -279,15 +293,19 @@ async def list_without_doc(out_file: str, limit: int | None) -> dict:
                 "ingredients": ingredients,
             }
         )
+    return bundles
 
+
+async def list_without_doc(out_file: str, limit: int | None) -> dict:
+    """Write JSONL bundles to `out_file`. Used by ad-hoc backfill paths;
+    the per-brand auto-fire path calls `_build_bundles` directly."""
+    bundles = await _build_bundles()
     written = bundles[:limit] if limit is not None else bundles
-
     out_path = Path(out_file)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         for b in written:
             f.write(json.dumps(b, ensure_ascii=False) + "\n")
-
     return {
         "count": len(bundles),
         "written": len(written),
@@ -381,6 +399,43 @@ async def generate_docs(in_file: str) -> dict:
         "succeeded": succeeded,
         "failed": len(failed),
         "failed_file": str(failed_path) if failed else None,
+        "log_file": str(_LOG_PATH),
+    }
+
+
+async def generate_docs_for_brand(brand_id: str) -> dict:
+    """Per-brand auto-fire entry point. Builds bundles in-memory (no
+    temp file), fans out under Semaphore(256), autocommits per row.
+    Failed rows are returned as a list so the orchestrator can surface
+    them — there is no `.failed.jsonl` artifact to chase down.
+    """
+    async with connection() as conn:
+        await _check_columns_exist(conn)
+
+    bundles = await _build_bundles(brand_id)
+    if not bundles:
+        return {"processed": 0, "succeeded": 0, "failed": 0, "errors": []}
+
+    _truncate_log()
+    client = _client()
+    sem = asyncio.Semaphore(_CONCURRENCY)
+
+    results = await asyncio.gather(
+        *[_process_one(client, sem, b) for b in bundles]
+    )
+
+    succeeded = sum(1 for r in results if r["status"] == "ok")
+    errors = [
+        {"id": r["id"], "error": r["error"]}
+        for r in results
+        if r["status"] == "failed"
+    ]
+
+    return {
+        "processed": len(results),
+        "succeeded": succeeded,
+        "failed": len(errors),
+        "errors": errors,
         "log_file": str(_LOG_PATH),
     }
 

@@ -1,6 +1,6 @@
 """Public `score_many()` orchestration for the tournament reranker.
 
-Contract: the call site (`ai/rerank/sql_filter/api.py`) hands us the
+Contract: the call site (`ai/rerank/graph.py::_judge`) hands us the
 DB pool, the user's HairProfile, the user's free-text request, and the
 list of Cohere-scored candidates. We:
 

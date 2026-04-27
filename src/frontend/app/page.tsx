@@ -1,5 +1,5 @@
 import HeroText from "@/components/ui/hero-shutter-text";
-import { SiteNav } from "@/components/site-nav";
+import { SidebarNav } from "@/components/sidebar-nav";
 import { PromptSection } from "./_components/prompt-section";
 
 export default function Home() {
@@ -23,21 +23,17 @@ export default function Home() {
         className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent"
       />
 
-      <SiteNav
-        trail={[
-          { label: "info", href: "/info" },
-          { label: "hair quiz", href: "/quiz" },
-        ]}
-      />
-
       <section
-        className="relative z-10 mx-auto flex min-h-screen max-w-[2160px] flex-col px-6 pb-10 md:px-12 md:pb-14 lg:px-20"
+        className="relative z-10 mx-auto flex min-h-screen max-w-[2160px] flex-col px-6 pt-8 pb-10 md:px-12 md:pt-10 md:pb-14 lg:px-20"
         style={{
           paddingLeft: "max(1.5rem, env(safe-area-inset-left))",
           paddingRight: "max(1.5rem, env(safe-area-inset-right))",
+          paddingTop: "max(2rem, env(safe-area-inset-top))",
           paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
         }}
       >
+        <SidebarNav />
+
         <div className="flex flex-1 items-center">
           <div className="max-w-[930px]">
             <h1 className="text-balance font-clash text-[66px] lowercase leading-[0.95] tracking-[-0.02em] text-white md:text-[102px] lg:text-[126px]">

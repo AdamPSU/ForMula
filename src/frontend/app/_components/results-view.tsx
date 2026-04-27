@@ -1,32 +1,29 @@
 "use client";
 
 import HeroText from "@/components/ui/hero-shutter-text";
-import { SiteNav } from "@/components/site-nav";
+import { SidebarNav } from "@/components/sidebar-nav";
 import type { FilterResponse } from "@/lib/api/filter";
 
 import { ResultShortlistRow } from "./result-shortlist-row";
 
-const QUERY_TRUNCATE = 60;
 const TOP_N = 15;
 
 const PROMPT_SHADOW =
   "shadow-[0_22px_50px_-22px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,248,239,0.75)]";
 
-function methodLabel(result: FilterResponse): string {
-  if (result.judged) return "judged";
-  if (result.reranked) return "reranked";
-  return "sql order";
-}
-
-function truncateQuery(q: string): string {
-  const trimmed = q.trim();
-  if (trimmed.length <= QUERY_TRUNCATE) return trimmed;
-  return `${trimmed.slice(0, QUERY_TRUNCATE - 1).trimEnd()}…`;
+function buildSubtitle(result: FilterResponse, shownCount: number): string {
+  if (result.surfaced_count === 0) return "no matches. try a different query";
+  const surfaced = result.surfaced_count.toLocaleString();
+  if (result.surfaced_count !== result.count) {
+    const filtered = result.count.toLocaleString();
+    const stageLabel = result.judged ? "judged" : "ranked";
+    return `${surfaced} products surfaced, narrowed to ${filtered} ${stageLabel}. showing top ${shownCount}`;
+  }
+  return `${surfaced} products surfaced. showing top ${shownCount}`;
 }
 
 export function ResultsView({
   result,
-  query,
   onReset,
 }: {
   result: FilterResponse;
@@ -36,13 +33,11 @@ export function ResultsView({
   const hasMatches = result.count > 0;
   const top = result.products.slice(0, TOP_N);
   const overflow = Math.max(0, result.count - top.length);
-  const heroText = hasMatches ? String(result.count) : "nothing";
-  const subtitle = hasMatches
-    ? `matches · ${methodLabel(result)} · for: ${truncateQuery(query)}`
-    : `matched. try a different query — for: ${truncateQuery(query)}`;
+  const heroText = hasMatches ? "results" : "nothing";
+  const subtitle = buildSubtitle(result, top.length);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative h-screen overflow-hidden bg-black text-white">
       <video
         src="/page-two.mp4"
         autoPlay
@@ -52,7 +47,7 @@ export function ResultsView({
         aria-hidden="true"
         width={3840}
         height={2160}
-        className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
+        className="fixed inset-x-0 top-0 h-screen w-full object-cover object-top motion-reduce:hidden"
       />
 
       {/* Mirrored gradient — darkens the right edge for legibility against the right-anchored column. */}
@@ -61,16 +56,17 @@ export function ResultsView({
         className="pointer-events-none absolute inset-0 bg-gradient-to-l from-black/65 via-black/20 to-transparent"
       />
 
-      <SiteNav trail={[{ label: "matches", href: "/" }]} />
-
       <section
-        className="relative z-10 mx-auto flex min-h-screen max-w-[2160px] flex-col px-6 pb-10 md:px-12 md:pb-14 lg:px-20"
+        className="relative z-10 mx-auto flex h-full max-w-[2160px] flex-col px-6 pt-8 pb-10 md:px-12 md:pt-10 md:pb-14 lg:px-20"
         style={{
           paddingLeft: "max(1.5rem, env(safe-area-inset-left))",
           paddingRight: "max(1.5rem, env(safe-area-inset-right))",
+          paddingTop: "max(2rem, env(safe-area-inset-top))",
           paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
         }}
       >
+        <SidebarNav />
+
         <div className="flex flex-1 items-center">
           <div className="ml-auto flex max-w-[560px] flex-col items-end text-right">
             <h1 className="text-balance font-clash text-[66px] lowercase leading-[0.95] tracking-[-0.02em] text-white md:text-[102px] lg:text-[126px]">
@@ -85,7 +81,7 @@ export function ResultsView({
             </h1>
 
             <p
-              className="rise mt-3 max-w-[520px] font-archivo text-[18px] leading-[1.55] text-white/80 md:mt-4 md:text-[22px]"
+              className="rise mt-3 max-w-[520px] font-archivo text-[16px] leading-[1.55] text-white/75 tabular-nums md:mt-4 md:text-[18px]"
               style={{ animationDelay: "250ms" }}
             >
               {subtitle}

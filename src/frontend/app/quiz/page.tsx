@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { SiteNav } from "@/components/site-nav";
+import { SidebarNav } from "@/components/sidebar-nav";
 import type { Quiz } from "@/lib/quiz/types";
 import { QuizFlow } from "./_components/quiz-flow";
 
@@ -38,16 +38,17 @@ export default function QuizPage() {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.45)_70%,rgba(0,0,0,0.7)_100%)]"
       />
 
-      <SiteNav trail={[{ label: "quiz", href: "/quiz" }]} />
-
       <section
-        className="relative z-10 mx-auto flex min-h-screen max-w-[1400px] flex-col px-6 pb-4 md:px-12 md:pb-6 lg:px-20"
+        className="relative z-10 mx-auto flex min-h-screen max-w-[2160px] flex-col px-6 pt-8 pb-4 md:px-12 md:pt-10 md:pb-6 lg:px-20"
         style={{
           paddingLeft: "max(1.5rem, env(safe-area-inset-left))",
           paddingRight: "max(1.5rem, env(safe-area-inset-right))",
+          paddingTop: "max(2rem, env(safe-area-inset-top))",
           paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
         }}
       >
+        <SidebarNav />
+
         <div className="flex flex-1 items-center justify-center py-2">
           <QuizFlow quiz={quiz} />
         </div>

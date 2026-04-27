@@ -33,13 +33,17 @@ export type FilterProduct = {
 export type FilterResponse = {
   products: FilterProduct[];
   count: number;
+  surfaced_count: number;
   sql: string;
   params: unknown[];
   reranked: boolean;
   judged: boolean;
 };
 
-export async function runFilter(text: string): Promise<FilterResponse> {
+export async function runFilter(
+  text: string,
+  options?: { personalize?: boolean },
+): Promise<FilterResponse> {
   const supabase = createClient();
   const {
     data: { session },
@@ -49,18 +53,18 @@ export async function runFilter(text: string): Promise<FilterResponse> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!apiUrl) throw new Error("NEXT_PUBLIC_API_URL is not set");
 
-  const res = await fetch(`${apiUrl}/filter`, {
+  const res = await fetch(`${apiUrl}/recommend`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, personalize: options?.personalize ?? true }),
   });
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`/filter ${res.status}: ${body}`);
+    throw new Error(`/recommend ${res.status}: ${body}`);
   }
   return res.json() as Promise<FilterResponse>;
 }

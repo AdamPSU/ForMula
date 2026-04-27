@@ -17,7 +17,7 @@ interface BorderGlowProps {
 const BorderGlow = ({
   children,
   className = "",
-  glowColor = "255, 255, 255",
+  glowColor = "68, 44, 45",
   spotlightRadius = 300,
   borderThickness = 6,
 }: BorderGlowProps) => {

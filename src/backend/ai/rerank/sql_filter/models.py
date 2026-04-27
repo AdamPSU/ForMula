@@ -1,9 +1,9 @@
-"""Pydantic schemas for the writer LLM and the /filter API.
+"""Writer-LLM wire schema.
 
-The writer emits `WriterOutput`: a parameterized SQL string + a list of
-parameters. Safety is enforced by `sql.ast_validate` against this output,
-not by a clause-level allowlist (that was v1/v2). The schema here only
-constrains the wire shape.
+`WriterOutput` constrains what the writer LLM is allowed to emit
+(parameterized SQL + parameter list). Safety is enforced post-hoc by
+`sql.ast_validate`, not by clause-level allowlisting in this schema.
+The pipeline-level request/response models live in `ai.rerank.models`.
 """
 
 from typing import Any
@@ -16,16 +16,3 @@ class WriterOutput(BaseModel):
 
     sql: str = Field(min_length=1)
     params: list[Any] = Field(default_factory=list)
-
-
-class FilterRequest(BaseModel):
-    text: str = Field(min_length=1, max_length=2000)
-
-
-class FilterResponse(BaseModel):
-    products: list[dict]
-    count: int
-    sql: str
-    params: list[Any]
-    reranked: bool
-    judged: bool = False
