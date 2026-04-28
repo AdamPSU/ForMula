@@ -36,17 +36,28 @@ from langgraph.types import Command
 from ai._timing import log_timing
 from ai.judge import ProductJudgment, score_many
 from ai.rerank.cohere import ScoredProduct, rerank
+from ai.rerank.cohere.service import MODEL_FAST, MODEL_PRO
 from ai.rerank.sql_filter.graph import FilterContext
 from ai.rerank.sql_filter.graph import graph as sql_filter_graph
 from ai.rerank.sql_filter.log import log_from_state
 from profiles.models import HairProfile
 from profiles.repository import get_latest_hair_profile
 
-# Cohere's `top_k` and the judge's `judge_top_n` are intentionally the
-# same number: every Cohere-surfaced row is judged, no slack tier. Bump
-# both together if you ever want a wider tournament.
-_TOP_K = 100
-_JUDGE_TOP_N = 100
+# Tournament caps. Default mode runs a 4-stage cascade off the 50
+# bucket (50→20→10→5→2, 8 calls/tour). Thinking mode (set per-request
+# from the chat surface's "Think" toggle) widens to the 160 bucket
+# (5 stages, 13 calls/tour) — clean fit for paper-standard n=20 head
+# groups and close to the "around 150" target. The judge layer snaps
+# the actual count down to the nearest schedule bucket inside
+# `score_many`, so any value in [50, 80) lands on the 50 bucket and
+# any value in [160, 200) lands on the 160 bucket.
+#
+# Think mode also swaps the Cohere model to rerank-v4.0-pro (quality-
+# tuned variant) and the judge LLM to the reasoning Grok variant on
+# the trailing K stages — see `cohere/service.py::MODEL_PRO` and
+# `judge/service.py::_stage_models`.
+MAX_TOURNAMENT_N_DEFAULT = 50
+MAX_TOURNAMENT_N_THINKING = 160
 
 
 @dataclass
@@ -184,6 +195,10 @@ class RerankState(TypedDict, total=False):
     user_text: str
     profile: HairProfile
     products: list[dict]
+    # Forwarded from the chat surface's "Think" toggle. Switches the
+    # judge to a larger Grok variant AND widens Cohere's `top_k` from
+    # 100 → 320 so the tournament evaluates a bigger candidate pool.
+    thinking: bool
 
     # outputs
     cohere_scored: list[ScoredProduct]
@@ -206,6 +221,9 @@ async def _cohere_rerank(
         p["id"] if isinstance(p["id"], UUID) else UUID(p["id"])
         for p in state["products"]
     ]
+    thinking = bool(state.get("thinking"))
+    top_k = MAX_TOURNAMENT_N_THINKING if thinking else MAX_TOURNAMENT_N_DEFAULT
+    cohere_model = MODEL_PRO if thinking else MODEL_FAST
     try:
         async with runtime.context.pool.acquire() as conn:
             scored = await rerank(
@@ -213,7 +231,8 @@ async def _cohere_rerank(
                 state["profile"],
                 state["user_text"],
                 candidate_ids,
-                top_k=_TOP_K,
+                top_k=top_k,
+                model=cohere_model,
             )
     except Exception as exc:
         log_timing(
@@ -250,7 +269,7 @@ async def _judge(
             state["profile"],
             state["user_text"],
             state["cohere_scored"],
-            judge_top_n=_JUDGE_TOP_N,
+            thinking=bool(state.get("thinking")),
         )
     except Exception as exc:
         log_timing(

@@ -45,6 +45,7 @@ class ChatStreamRequest(BaseModel):
     user_text: Optional[str] = Field(default=None, max_length=2000)
     thread_id: Optional[str] = None
     personalize: bool = True
+    thinking: bool = False
     resume: Optional[dict[str, Any]] = None
 
 
@@ -72,6 +73,7 @@ async def chat_stream(
                 "user_text": payload.user_text,
                 "user_id": user_id,
                 "personalize": payload.personalize,
+                "thinking": payload.thinking,
                 "phase": "init",
                 # Seed the conversation with the user's prompt so it renders
                 # as the first bubble. The agent's responses append after.

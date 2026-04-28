@@ -89,7 +89,13 @@ def _profile_lines(profile: dict[str, Any] | None) -> str:
     if profile.get("concerns"):
         parts.append(f"concerns={','.join(profile['concerns'])}")
     parts.append(f"goals={','.join(profile['goals'])}")
-    return "User HairProfile: " + " ".join(parts)
+    base = "User HairProfile: " + " ".join(parts)
+    # Story is the only multi-line/free-text field — keep it on its own
+    # labeled line instead of jamming it into the space-joined parts.
+    # Persona rule in `INCI_DISCIPLINE` instructs the model how to read it.
+    if profile.get("story"):
+        return f"{base}\nStory: {profile['story']}"
+    return base
 
 
 def _top_judged_summary(state: ChatState, n: int = 10) -> str:

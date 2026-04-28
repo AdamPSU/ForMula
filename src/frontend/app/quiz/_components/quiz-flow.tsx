@@ -16,6 +16,7 @@ import { submitHairProfile } from "@/lib/api/hair-profile";
 import { QuestionSingle } from "./question-single";
 import { QuestionMulti } from "./question-multi";
 import { QuestionImage } from "./question-image";
+import { QuestionText } from "./question-text";
 
 function isVisible(q: Question, answers: Answers): boolean {
   if (!q.conditional_on) return true;
@@ -27,6 +28,12 @@ function isVisible(q: Question, answers: Answers): boolean {
 }
 
 function canAdvance(q: Question, value: AnswerValue | undefined): boolean {
+  if (q.type === "text") {
+    // Optional text → always advanceable (skip allowed). Required text →
+    // need a non-empty trimmed value.
+    if (q.optional) return true;
+    return typeof value === "string" && value.trim().length > 0;
+  }
   if (value === undefined) return false;
   if (q.type === "multi") {
     const arr = value as string[];
@@ -49,6 +56,18 @@ function buildProfile(quiz: Quiz, answers: Answers): HairProfile {
       val = q.skip_value;
     } else {
       val = answers[q.id];
+      // Optional text questions: trim, and omit the key entirely when
+      // blank so the POST body has no story field. Pydantic's
+      // `story: str | None = None` accepts the absence cleanly.
+      if (q.type === "text") {
+        const s = typeof val === "string" ? val.trim() : "";
+        if (s.length === 0) {
+          if (q.optional) continue;
+          throw new Error(`missing answer for ${q.id}`);
+        }
+        profile[q.maps_to] = s;
+        continue;
+      }
       if (val === undefined) {
         throw new Error(`missing answer for ${q.id}`);
       }
@@ -163,6 +182,14 @@ export function QuizFlow({ quiz }: { quiz: Quiz }) {
             onChange={selectAndAdvance}
           />
         )}
+        {current.type === "text" && (
+          <QuestionText
+            value={value as string | undefined}
+            onChange={setAnswer}
+            placeholder={current.placeholder}
+            maxLength={current.max_length}
+          />
+        )}
       </div>
 
       {error && (
@@ -186,7 +213,7 @@ export function QuizFlow({ quiz }: { quiz: Quiz }) {
           back
         </button>
 
-        {current.type === "multi" && (
+        {(current.type === "multi" || current.type === "text") && (
           <button
             type="button"
             onClick={next}

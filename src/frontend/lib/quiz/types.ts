@@ -1,4 +1,4 @@
-export type QuestionType = "single" | "multi" | "single_image";
+export type QuestionType = "single" | "multi" | "single_image" | "text";
 
 export interface QuestionOption {
   id: string;
@@ -21,6 +21,9 @@ export interface Question {
   conditional_on?: ConditionalOn;
   skip_value?: string;
   wrap_in_list?: boolean;
+  placeholder?: string;
+  max_length?: number;
+  optional?: boolean;
 }
 
 export interface Quiz {
@@ -36,10 +39,12 @@ export interface HairProfile {
   scalp_condition: string;
   density: string;
   strand_thickness: string;
-  drying_method: string;
+  chemical_treatment: string;
+  heat_tool_frequency: string;
   concerns: string[];
   goals: string[];
   product_absorption: string;
   wash_frequency: string;
   climate: string;
+  story?: string;
 }

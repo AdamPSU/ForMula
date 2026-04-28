@@ -19,7 +19,6 @@ export type FilterProduct = {
   bools?: Record<string, boolean>;
   evidence?: Record<string, string>;
   reasoning?: Record<string, string>;
-  summary?: string;
   active_criteria?: string[];
   [key: string]: unknown;
 };

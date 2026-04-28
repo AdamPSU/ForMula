@@ -10,15 +10,16 @@ import {
 
 import type { FilterProduct } from "@/lib/api/filter";
 
-// Square-root transform on the raw tournament fraction.
+// Cube-root transform on the raw tournament fraction.
 // Raw `overall_score` is `tournament_points / (5 * R)` and structurally caps
 // around 0.7–0.8 for "best in catalog" because no product wins top-2 in every
-// single one of the R tournaments. The sqrt stretches the upper range so top
-// contenders cluster in the 80s–90s without lying cross-query (transform is
-// monotonic and deterministic).
+// single one of the R tournaments. The cbrt stretches the upper range more
+// than sqrt so top contenders cluster in the mid-90s and a top-10 tail still
+// reads in the high-70s, without lying cross-query (transform is monotonic
+// and deterministic).
 function scoreNumber(p: FilterProduct): number {
   if (typeof p.overall_score === "number") {
-    return Math.round(Math.sqrt(p.overall_score) * 100);
+    return Math.round(Math.cbrt(p.overall_score) * 100);
   }
   if (typeof p.relevance_score === "number") {
     return Math.round(p.relevance_score * 100);

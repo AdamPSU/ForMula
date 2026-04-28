@@ -16,11 +16,13 @@ def log_call(
     docs_sent: int,
     top_results: list[tuple[UUID, float]],
     elapsed_ms: float,
+    model: str,
     error: str | None = None,
 ) -> None:
     ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
     lines = [
         f"--- {ts} ---",
+        f"model: {model}",
         f"query:\n{query}",
         f"candidates_in: {candidate_count}",
         f"docs_sent: {docs_sent}",

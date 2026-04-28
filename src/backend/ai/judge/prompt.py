@@ -9,19 +9,30 @@ are best for this user?'.
 
 Two facets matter for accuracy:
 
-  - **HairProfile vocabulary alignment.** The user-profile section uses
-    the same enum tokens as the rerank_doc YAML (curl_pattern, scalp,
-    porosity, etc.), so the LLM's attention can match query tokens to
-    doc tokens directly. Mirrors `cohere/query.py::_serialize_profile`.
+  - **Consistent vocabulary.** The profile section reuses the same
+    HairProfile enum tokens (`curly`, `dryness`, `soaks`, …) that
+    `rerank_doc` carries on the doc side, so the model can tie user
+    attributes to doc facets without a translation step. Label strings
+    (`Hair type:`, `Scalp:`, …) differ from the doc's `Hair types` /
+    `Scalp fit` headings on purpose — values carry the signal, labels
+    are scaffolding. The judge deliberately includes
+    `chemical_treatment` and `heat_tool_frequency`, which the Cohere
+    cross-encoder query (`cohere/query.py::build_query`) does not — a
+    generative LLM can reason over them, a cross-encoder cannot.
 
-  - **Description stripping.** rerank_doc embeds a `Description: ...`
-    line that is verbatim scraped marketing copy (when present). It is
-    an external-influence vector — drop it before judgment.
+  - **Description stripping.** `rerank_doc` embeds a `Description:`
+    line of verbatim scraped marketing copy (when present). It is an
+    external-influence vector — drop it before judgment. Stripped once
+    at fetch time in `service.py::_fetch_rerank_docs`, not per call.
 """
 
 from __future__ import annotations
 
-from ai._persona import COSMETIC_CHEMIST_IDENTITY, INCI_DISCIPLINE
+from ai._persona import (
+    COSMETIC_CHEMIST_IDENTITY,
+    HAIR_LAWS,
+    INCI_DISCIPLINE,
+)
 from profiles.models import HairProfile
 
 _SYSTEM_PROMPT = (
@@ -32,18 +43,31 @@ _SYSTEM_PROMPT = (
     "\n"
     f"{INCI_DISCIPLINE}\n"
     "\n"
-    "Output a single JSON object with key `selected` containing the m "
-    "chosen document numbers in descending order of fit. Example for "
-    "m=3: {\"selected\": [4, 1, 7]}. Do not output anything else."
+    f"{HAIR_LAWS}\n"
+    "\n"
+    "=== HOW TO ANSWER ===\n"
+    "Produce a single JSON object with two fields, in this order: "
+    "`notes`, `selected`.\n"
+    "\n"
+    "  1. `notes` — work through the candidates against the laws and "
+    "the user's profile. Surface the ingredient signals that fit or "
+    "disqualify each contender. This is your reasoning before you "
+    "commit; do not rank yet.\n"
+    "  2. `selected` — your top-m, descending fit order.\n"
+    "\n"
+    "Only `selected` is read by the downstream system. `notes` exists "
+    "so you reason before committing — per-field specifics are in the "
+    "response schema."
 )
 
 
 def strip_description(rerank_doc: str) -> str:
     """Drop the `Description: ...` line from a rerank_doc YAML.
 
-    Same single-line filter as the v2 judge used. rerank_doc is rendered
-    as a flat sequence of single-line `Key: value` pairs; no multi-line
-    YAML blocks. Pure string operation, no YAML parser needed.
+    `rerank_doc` is a flat sequence of single-line `Key: value` pairs;
+    no multi-line blocks. Pure string operation. Called once per doc at
+    fetch time (`service.py::_fetch_rerank_docs`), not in the per-call
+    hot path.
     """
     return "\n".join(
         line for line in rerank_doc.splitlines()
@@ -54,10 +78,25 @@ def strip_description(rerank_doc: str) -> str:
 def serialize_profile(profile: HairProfile) -> str:
     """Compact one-line-per-field profile dump.
 
-    Vocabulary mirrors `cohere/query.py` and the rerank_doc YAML keys so
-    the cross-encoder-style attention has aligned tokens on both sides.
-    Positives-only: omit `concerns` if empty, omit porosity when the
-    user said 'unsure'.
+    Values reuse the HairProfile enum tokens that `rerank_doc` carries
+    on the doc side, so the model sees the same vocabulary in both
+    halves of the prompt. Positives-only: omit `concerns` if empty,
+    omit porosity when 'unsure', omit chemical treatment when 'none',
+    omit heat tools when 'never', omit `story` when blank — silence >
+    false signal.
+
+    The optional `Story:` line is the user's free-text personal-formulation
+    history (things they've tried, what worked, what didn't). It lands as
+    the trailing line so the structured enum block is read first; the
+    `INCI_DISCIPLINE` persona instructs the model to treat any brand or
+    product names inside it as ingredient-history hints, never as a
+    match-by-brand signal.
+
+    Diverges deliberately from `cohere/query.py::build_query`:
+    chemical_treatment and heat_tool_frequency are included here but
+    not there, because a generative LLM can reason over them and a
+    cross-encoder reranker cannot. `story` is judge-only for the same
+    reason.
     """
     lines: list[str] = [
         f"Hair type: {profile.curl_pattern}",
@@ -70,9 +109,14 @@ def serialize_profile(profile: HairProfile) -> str:
     lines.append(f"Goals: {', '.join(profile.goals)}")
     if profile.product_absorption != "unsure":
         lines.append(f"Porosity: {profile.product_absorption}")
+    if profile.chemical_treatment != "none":
+        lines.append(f"Chemical treatment: {profile.chemical_treatment}")
+    if profile.heat_tool_frequency != "never":
+        lines.append(f"Heat tools: {profile.heat_tool_frequency}")
     lines.append(f"Routine: {profile.wash_frequency}")
     lines.append(f"Climate: {profile.climate}")
-    lines.append(f"Drying: {profile.drying_method}")
+    if profile.story:
+        lines.append(f"Story: {profile.story}")
     return "\n".join(lines)
 
 
@@ -88,7 +132,8 @@ def build_selection_prompt(
     `group_docs` is `[(label_id, rerank_doc_yaml), ...]` of length n,
     where label_id is 1..n within this group (the LLM sees stable
     `Document N` labels per call; the caller maps each label back to a
-    product UUID after parsing).
+    product UUID after parsing). Docs are expected pre-stripped of
+    their `Description:` line — see `service.py::_fetch_rerank_docs`.
     """
     n = len(group_docs)
     body_lines = ["=== USER REQUEST ===", query.strip(), ""]
@@ -98,14 +143,12 @@ def build_selection_prompt(
     body_lines.append("=== CANDIDATES ===")
     for label, doc in group_docs:
         body_lines.append(f"[Document {label}]:")
-        body_lines.append(strip_description(doc))
+        body_lines.append(doc)
         body_lines.append("")
     body_lines.append("=== TASK ===")
     body_lines.append(
         f"Select the {m} documents most relevant to this user's request "
-        f"and profile, out of the {n} candidates above. Output a JSON "
-        f"object with key 'selected' containing exactly {m} document "
-        f"numbers (each in [1, {n}]), in descending order of fit. "
-        "Output nothing else."
+        f"and profile out of the {n} candidates above, in descending fit "
+        f"order. Follow the four steps from the system prompt."
     )
     return _SYSTEM_PROMPT, "\n".join(body_lines)

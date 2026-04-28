@@ -56,6 +56,11 @@ class ChatState(TypedDict, total=False):
     user_text: str
     user_id: str
     personalize: bool
+    # "Think" toggle from the prompt UI. When true, the rerank stage
+    # widens Cohere's `top_k` from 100 → 320 so the tournament works
+    # on a larger candidate pool. Default false; carried through the
+    # chat graph and forwarded into `rerank_graph`.
+    thinking: bool
 
     # Filter outputs. `profile` is the dumped HairProfile dict — same
     # msgpack-hygiene reasoning as `cohere_scored` / `judgments`.

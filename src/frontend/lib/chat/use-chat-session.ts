@@ -133,6 +133,7 @@ export function useChatSession() {
       thread_id?: string;
       user_text?: string;
       personalize?: boolean;
+      thinking?: boolean;
       resume?: ResumePayload;
     }) => {
       // Abort any prior stream before starting a new one.
@@ -186,13 +187,13 @@ export function useChatSession() {
   );
 
   const startFresh = useCallback(
-    (userText: string, personalize: boolean) => {
+    (userText: string, personalize: boolean, thinking: boolean) => {
       // Paint the user's bubble immediately so the chat surface has
       // conversational context as soon as it expands. The backend also
       // seeds this into checkpointer state inside _run_filter, so a
       // /results reattach sees the same first message.
       dispatch({ type: "ADD_USER", text: userText });
-      return runStream({ user_text: userText, personalize });
+      return runStream({ user_text: userText, personalize, thinking });
     },
     [runStream],
   );

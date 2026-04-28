@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 9,
   "questions": [
     {
       "id": "curl_pattern",
@@ -49,13 +49,28 @@
       ]
     },
     {
-      "id": "drying_method",
-      "prompt": "How do you usually dry your hair?",
+      "id": "chemical_treatment",
+      "prompt": "Have you used any chemical treatments on your hair recently?",
       "type": "single",
-      "maps_to": "drying_method",
+      "maps_to": "chemical_treatment",
       "options": [
-        {"id": "air_dry", "label": "Air dry"},
-        {"id": "blow_dry", "label": "Blow dry"}
+        {"id": "none", "label": "None"},
+        {"id": "color_treated", "label": "Color (semi or permanent dye)"},
+        {"id": "bleached_highlighted", "label": "Bleach or highlights"},
+        {"id": "relaxed_or_permed", "label": "Relaxer or perm"},
+        {"id": "multiple", "label": "Multiple of the above"}
+      ]
+    },
+    {
+      "id": "heat_tool_frequency",
+      "prompt": "How often do you use hot tools (blow dryer, flat iron, curling wand)?",
+      "type": "single",
+      "maps_to": "heat_tool_frequency",
+      "options": [
+        {"id": "never", "label": "Never"},
+        {"id": "occasional", "label": "Occasionally (less than once a week)"},
+        {"id": "weekly", "label": "About once a week"},
+        {"id": "frequent", "label": "Several times a week or daily"}
       ]
     },
     {
@@ -126,6 +141,16 @@
         {"id": "cold", "label": "Cold"},
         {"id": "mixed", "label": "Mixed / seasonal"}
       ]
+    },
+    {
+      "id": "story",
+      "prompt": "Anything else worth knowing? (Optional)",
+      "type": "text",
+      "maps_to": "story",
+      "placeholder": "e.g. sulfates burn my scalp",
+      "max_length": 800,
+      "optional": true,
+      "options": []
     }
   ]
 }

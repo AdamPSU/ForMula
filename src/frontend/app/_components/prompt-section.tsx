@@ -15,6 +15,7 @@ export function PromptSection() {
   const { state, startFresh, send, reset } = useChatSession();
 
   const [personalize, setPersonalize] = useState(true);
+  const [thinking, setThinking] = useState(false);
   const [input, setInput] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);
   // Tracks the exact text last submitted, so editing the prompt
@@ -58,7 +59,7 @@ export function PromptSection() {
     setHasSubmitted(true);
     pushedRef.current = false;
     reset();
-    startFresh(text, personalize);
+    startFresh(text, personalize, thinking);
   };
 
   // Show the cream loader once the SQL gate has cleared (no warning / no error)
@@ -78,6 +79,8 @@ export function PromptSection() {
             placeholder="what are you looking for?"
             personalize={personalize}
             onPersonalizeChange={setPersonalize}
+            thinking={thinking}
+            onThinkingChange={setThinking}
             isLoading={isWorking}
             value={input}
             onValueChange={setInput}

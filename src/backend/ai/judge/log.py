@@ -26,6 +26,15 @@ from uuid import UUID
 _LOG_PATH = Path(__file__).resolve().parent / "log.txt"
 
 
+@dataclass(frozen=True)
+class _LlmUsage:
+    """Token usage for one LLM call. Zeros when the API didn't report it."""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    cached_tokens: int = 0
+
+
 @dataclass
 class _CallRecord:
     success: bool
@@ -33,6 +42,7 @@ class _CallRecord:
     duration_ms: float
     stage_index: int
     tournament_seed: int
+    usage: _LlmUsage = field(default_factory=_LlmUsage)
 
 
 @dataclass
@@ -51,6 +61,7 @@ class TournamentMetrics:
     # Failure breakdown
     n_validation_failures: int
     n_network_failures: int
+    n_rate_limit_waits: int    # 429s that triggered a backoff-and-retry, not a fallback
     n_other_failures: int
     n_fallbacks: int           # selection rounds that hit the deterministic fallback
     fallback_reasons: list[str]
@@ -64,6 +75,14 @@ class TournamentMetrics:
     per_call_p50_ms: float
     per_call_p99_ms: float
 
+    # Token usage / prompt-cache visibility, summed over successful calls.
+    # `cache_hit_ratio` = cached / prompt; near-zero means the stable
+    # system prefix isn't being cached and is the lever for follow-up.
+    prompt_tokens_total: int
+    completion_tokens_total: int
+    cached_tokens_total: int
+    cache_hit_ratio: float
+
     # Top-of-leaderboard sanity
     top_10: list[tuple[UUID, int, float]]   # (product_id, points, overall_score)
 
@@ -75,6 +94,10 @@ class _RunAccumulator:
     profile_summary: str
     n_products_in: int
     R: int
+    # Schedule-derived: each bucket has its own calls/tournament count.
+    # Stored on the accumulator so `finalize` can compute the baseline
+    # without re-importing schedule constants.
+    calls_per_tournament: int
     timestamp: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )
@@ -89,10 +112,12 @@ class _RunAccumulator:
         duration_ms: float,
         stage_index: int,
         tournament_seed: int,
+        usage: _LlmUsage | None = None,
     ) -> None:
         self.calls.append(_CallRecord(
             success=success, error_type=error_type, duration_ms=duration_ms,
             stage_index=stage_index, tournament_seed=tournament_seed,
+            usage=usage if usage is not None else _LlmUsage(),
         ))
 
     def record_fallback(
@@ -115,9 +140,13 @@ class _RunAccumulator:
         n_network = sum(
             1 for c in self.calls if not c.success and c.error_type == "Network"
         )
+        n_rate_limit = sum(
+            1 for c in self.calls if not c.success and c.error_type == "RateLimit"
+        )
         n_other = sum(
             1 for c in self.calls
-            if not c.success and c.error_type not in ("Validation", "Network")
+            if not c.success
+            and c.error_type not in ("Validation", "Network", "RateLimit")
         )
 
         # Score distribution over all products.
@@ -152,8 +181,23 @@ class _RunAccumulator:
 
         n_total = len(self.calls)
         # Baseline = perfectly-clean call count (no retries).
-        from ai.judge.tournament import CALLS_PER_TOURNAMENT
-        n_baseline = CALLS_PER_TOURNAMENT * self.R
+        n_baseline = self.calls_per_tournament * self.R
+
+        # Token usage over successful calls only — failed calls carry no
+        # useful usage (and may not have a usage block at all).
+        prompt_tokens_total = sum(
+            c.usage.prompt_tokens for c in self.calls if c.success
+        )
+        completion_tokens_total = sum(
+            c.usage.completion_tokens for c in self.calls if c.success
+        )
+        cached_tokens_total = sum(
+            c.usage.cached_tokens for c in self.calls if c.success
+        )
+        cache_hit_ratio = (
+            cached_tokens_total / prompt_tokens_total
+            if prompt_tokens_total else 0.0
+        )
 
         return TournamentMetrics(
             timestamp=self.timestamp,
@@ -164,6 +208,7 @@ class _RunAccumulator:
             n_baseline_calls=n_baseline,
             n_validation_failures=n_validation,
             n_network_failures=n_network,
+            n_rate_limit_waits=n_rate_limit,
             n_other_failures=n_other,
             n_fallbacks=len(self.fallbacks),
             fallback_reasons=[r for _, _, r in self.fallbacks],
@@ -172,6 +217,10 @@ class _RunAccumulator:
             wall_clock_ms=wall_clock_ms,
             per_call_p50_ms=per_call_p50,
             per_call_p99_ms=per_call_p99,
+            prompt_tokens_total=prompt_tokens_total,
+            completion_tokens_total=completion_tokens_total,
+            cached_tokens_total=cached_tokens_total,
+            cache_hit_ratio=cache_hit_ratio,
             top_10=[
                 (pid, points_by_id[pid], score_by_id[pid])
                 for pid in ranked_top_10[:10]
@@ -198,6 +247,7 @@ def write_metrics(metrics: TournamentMetrics) -> None:
         (
             f"failures: validation={metrics.n_validation_failures} "
             f"network={metrics.n_network_failures} "
+            f"rate_limit={metrics.n_rate_limit_waits} "
             f"other={metrics.n_other_failures} "
             f"fallbacks={metrics.n_fallbacks}"
         ),
@@ -211,6 +261,12 @@ def write_metrics(metrics: TournamentMetrics) -> None:
             f"latency: wall={metrics.wall_clock_ms:.0f}ms  "
             f"per_call p50={metrics.per_call_p50_ms:.0f}ms "
             f"p99={metrics.per_call_p99_ms:.0f}ms"
+        ),
+        (
+            f"cache: prompt={metrics.prompt_tokens_total} "
+            f"cached={metrics.cached_tokens_total} "
+            f"({metrics.cache_hit_ratio:.1%})  "
+            f"completion={metrics.completion_tokens_total}"
         ),
     ]
 

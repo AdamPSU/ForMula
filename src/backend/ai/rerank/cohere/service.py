@@ -36,7 +36,8 @@ from ai.rerank.cohere.query import build_query
 from ai.rerank.cohere.repository import fetch_rerank_docs
 from profiles.models import HairProfile
 
-_MODEL = "rerank-v4.0-fast"
+MODEL_FAST = "rerank-v4.0-fast"
+MODEL_PRO = "rerank-v4.0-pro"
 # Default 4096 truncates the tail of long INCI lists. v4 chunk size is
 # 32,764; bump to 16K to give the Ingredients line breathing room.
 _MAX_TOKENS_PER_DOC = 16384
@@ -55,6 +56,8 @@ async def rerank(
     query: str,
     candidate_ids: list[UUID],
     top_k: int = 150,
+    *,
+    model: str = MODEL_FAST,
 ) -> list[ScoredProduct]:
     if not candidate_ids:
         return []
@@ -95,7 +98,7 @@ async def rerank(
             try:
                 with attempt:
                     response = await client.v2.rerank(
-                        model=_MODEL,
+                        model=model,
                         query=cohere_query,
                         documents=documents,
                         top_n=min(top_k, len(documents)),
@@ -123,6 +126,7 @@ async def rerank(
         log_timing(
             "cohere_api",
             elapsed_ms=round(elapsed_ms, 1),
+            model=model,
             attempts=len(attempt_durations_ms),
             attempt_durations_ms=attempt_durations_ms,
             outcomes=attempt_outcomes,
@@ -134,6 +138,7 @@ async def rerank(
             docs_sent=len(documents),
             top_results=[],
             elapsed_ms=elapsed_ms,
+            model=model,
             error=f"{type(exc).__name__}: {exc}",
         )
         raise
@@ -142,6 +147,7 @@ async def rerank(
     log_timing(
         "cohere_api",
         elapsed_ms=round(elapsed_ms, 1),
+        model=model,
         attempts=len(attempt_durations_ms),
         attempt_durations_ms=attempt_durations_ms,
         outcomes=attempt_outcomes,
@@ -161,5 +167,6 @@ async def rerank(
         docs_sent=len(documents),
         top_results=[(s.product_id, s.relevance_score) for s in scored[:10]],
         elapsed_ms=elapsed_ms,
+        model=model,
     )
     return scored

@@ -9,6 +9,7 @@ type StreamBody = {
   thread_id?: string;
   user_text?: string;
   personalize?: boolean;
+  thinking?: boolean;
   resume?: ResumePayload;
 };
 

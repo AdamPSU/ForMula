@@ -722,3 +722,490 @@ top_10:
   0038eddb-f633-4406-8eed-a4a3d8128a89  pts= 24  score=0.480
   e78526c7-68a8-4c14-a6f0-6b76351d4fa2  pts= 24  score=0.480
 
+--- 2026-04-28T12:43:29+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.040 median=0.140 p75=0.280 max=0.740 mean=0.174
+top_bucket_dispersion: 7 (≥6 healthy)
+latency: wall=4163ms  per_call p50=577ms p99=1271ms
+top_10:
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 37  score=0.740
+  1912b76b-787a-4ab7-95a9-1f827e629297  pts= 33  score=0.660
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc  pts= 32  score=0.640
+  60510a11-9865-427d-851f-210a65f311ab  pts= 31  score=0.620
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 28  score=0.560
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 28  score=0.560
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 24  score=0.480
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 24  score=0.480
+  bb44a469-3423-41fd-a8e5-9d07a1e73976  pts= 22  score=0.440
+  da8d1d58-4173-42ba-b000-cc950ce7ffb6  pts= 22  score=0.440
+
+--- 2026-04-28T13:26:16+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.060 median=0.120 p75=0.220 max=0.860 mean=0.174
+top_bucket_dispersion: 9 (≥6 healthy)
+latency: wall=4047ms  per_call p50=577ms p99=1393ms
+top_10:
+  ea073aca-56b5-4db3-a21b-e804d0c6c903  pts= 43  score=0.860
+  4d410476-d7f2-440c-afef-3f7658538306  pts= 43  score=0.860
+  bb02f4fa-662d-45f9-8d01-014bbee4417c  pts= 36  score=0.720
+  8c0d2650-99fe-4880-8717-e6b7c6ce1fb7  pts= 34  score=0.680
+  264922be-9c98-4fc8-ad4b-7dc3ce401b25  pts= 33  score=0.660
+  89a21378-0e71-44e2-a688-c2550a98d1f5  pts= 27  score=0.540
+  0f46d4d4-a86b-4c30-b22f-2b8a82bf7ebf  pts= 26  score=0.520
+  13b68e84-4c86-4989-9b34-f1fb2a698702  pts= 25  score=0.500
+  0f54029f-0429-4e73-9ecc-9b44d44a76dc  pts= 24  score=0.480
+  e78526c7-68a8-4c14-a6f0-6b76351d4fa2  pts= 22  score=0.440
+
+--- 2026-04-28T13:34:56+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.060 median=0.120 p75=0.240 max=0.760 mean=0.174
+top_bucket_dispersion: 9 (≥6 healthy)
+latency: wall=3854ms  per_call p50=559ms p99=1264ms
+top_10:
+  ea073aca-56b5-4db3-a21b-e804d0c6c903  pts= 38  score=0.760
+  89a21378-0e71-44e2-a688-c2550a98d1f5  pts= 37  score=0.740
+  4d410476-d7f2-440c-afef-3f7658538306  pts= 36  score=0.720
+  8c0d2650-99fe-4880-8717-e6b7c6ce1fb7  pts= 34  score=0.680
+  bb02f4fa-662d-45f9-8d01-014bbee4417c  pts= 32  score=0.640
+  264922be-9c98-4fc8-ad4b-7dc3ce401b25  pts= 32  score=0.640
+  13b68e84-4c86-4989-9b34-f1fb2a698702  pts= 25  score=0.500
+  a69f1a22-a84b-46ee-acb4-ffa6877b53cc  pts= 22  score=0.440
+  460ab614-9cda-4d64-8fce-088ab6f5023f  pts= 21  score=0.420
+  0f46d4d4-a86b-4c30-b22f-2b8a82bf7ebf  pts= 19  score=0.380
+
+--- 2026-04-28T13:35:38+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 320  R: 10  calls: 230 (baseline 230, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.020 p75=0.080 max=0.860 mean=0.073
+top_bucket_dispersion: 10 (≥6 healthy)
+latency: wall=250023ms  per_call p50=37835ms p99=77193ms
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 43  score=0.860
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 37  score=0.740
+  c78e78d0-e1d8-45bc-8a40-40e523f80e3d  pts= 35  score=0.700
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 32  score=0.640
+  60510a11-9865-427d-851f-210a65f311ab  pts= 31  score=0.620
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 28  score=0.560
+  c9f22e04-f059-4283-a871-b87f0d056d50  pts= 27  score=0.540
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 26  score=0.520
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 25  score=0.500
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 23  score=0.460
+
+--- 2026-04-28T14:26:37+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.040 median=0.120 p75=0.240 max=0.860 mean=0.174
+top_bucket_dispersion: 9 (≥6 healthy)
+latency: wall=5987ms  per_call p50=570ms p99=1078ms
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 43  score=0.860
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 39  score=0.780
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 33  score=0.660
+  60510a11-9865-427d-851f-210a65f311ab  pts= 30  score=0.600
+  15c3b207-6619-4b8c-a0fc-ee2968d69742  pts= 27  score=0.540
+  da8d1d58-4173-42ba-b000-cc950ce7ffb6  pts= 25  score=0.500
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 23  score=0.460
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 21  score=0.420
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 21  score=0.420
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8  pts= 20  score=0.400
+
+--- 2026-04-28T14:34:06+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.040 median=0.100 p75=0.260 max=0.840 mean=0.174
+top_bucket_dispersion: 6 (≥6 healthy)
+latency: wall=3946ms  per_call p50=548ms p99=1286ms
+top_10:
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 42  score=0.840
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 35  score=0.700
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 28  score=0.560
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 27  score=0.540
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 27  score=0.540
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 26  score=0.520
+  60510a11-9865-427d-851f-210a65f311ab  pts= 26  score=0.520
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 25  score=0.500
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc  pts= 25  score=0.500
+  c78e78d0-e1d8-45bc-8a40-40e523f80e3d  pts= 25  score=0.500
+
+--- 2026-04-28T14:41:46+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 320  R: 10  calls: 230 (baseline 230, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.020 p75=0.080 max=0.880 mean=0.073
+top_bucket_dispersion: 8 (≥6 healthy)
+latency: wall=7711ms  per_call p50=815ms p99=1576ms
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 44  score=0.880
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 38  score=0.760
+  da8d1d58-4173-42ba-b000-cc950ce7ffb6  pts= 29  score=0.580
+  60510a11-9865-427d-851f-210a65f311ab  pts= 26  score=0.520
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc  pts= 24  score=0.480
+  1912b76b-787a-4ab7-95a9-1f827e629297  pts= 24  score=0.480
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 23  score=0.460
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 22  score=0.440
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 21  score=0.420
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 21  score=0.420
+
+--- 2026-04-28T15:11:06+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.040 median=0.100 p75=0.240 max=0.980 mean=0.174
+top_bucket_dispersion: 10 (≥6 healthy)
+latency: wall=257279ms  per_call p50=34617ms p99=66814ms
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 49  score=0.980
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 42  score=0.840
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 40  score=0.800
+  60510a11-9865-427d-851f-210a65f311ab  pts= 35  score=0.700
+  c78e78d0-e1d8-45bc-8a40-40e523f80e3d  pts= 34  score=0.680
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 28  score=0.560
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 27  score=0.540
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 26  score=0.520
+  15c3b207-6619-4b8c-a0fc-ee2968d69742  pts= 25  score=0.500
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 23  score=0.460
+
+--- 2026-04-28T15:25:02+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.040 median=0.120 p75=0.240 max=0.700 mean=0.174
+top_bucket_dispersion: 7 (≥6 healthy)
+latency: wall=5522ms  per_call p50=553ms p99=2028ms
+top_10:
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 35  score=0.700
+  1912b76b-787a-4ab7-95a9-1f827e629297  pts= 34  score=0.680
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 33  score=0.660
+  da8d1d58-4173-42ba-b000-cc950ce7ffb6  pts= 30  score=0.600
+  60510a11-9865-427d-851f-210a65f311ab  pts= 30  score=0.600
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 28  score=0.560
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 28  score=0.560
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 26  score=0.520
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 25  score=0.500
+  bb44a469-3423-41fd-a8e5-9d07a1e73976  pts= 25  score=0.500
+
+--- 2026-04-28T15:25:32+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 140 (baseline 130, overhead +7.7%)
+failures: validation=0 network=10 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.020 median=0.100 p75=0.280 max=1.000 mean=0.174
+top_bucket_dispersion: 8 (≥6 healthy)
+latency: wall=1737787ms  per_call p50=91154ms p99=361557ms
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 50  score=1.000
+  60510a11-9865-427d-851f-210a65f311ab  pts= 37  score=0.740
+  c78e78d0-e1d8-45bc-8a40-40e523f80e3d  pts= 35  score=0.700
+  c9f22e04-f059-4283-a871-b87f0d056d50  pts= 35  score=0.700
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 33  score=0.660
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 33  score=0.660
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 31  score=0.620
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 29  score=0.580
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc  pts= 26  score=0.520
+  1912b76b-787a-4ab7-95a9-1f827e629297  pts= 24  score=0.480
+
+--- 2026-04-28T16:43:45+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 5  calls: 65 (baseline 65, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=65 fallbacks=65
+score_dist: min=0.000 p25=0.080 median=0.160 p75=0.240 max=0.440 mean=0.174
+top_bucket_dispersion: 4 (≥6 healthy)
+latency: wall=932ms  per_call p50=103ms p99=233ms
+fallbacks:
+  (65x) Other: BadRequestError: Error code: 400 - {'code': 'Client specified an invalid argument', 'error': 'Model not found: grok-4-20-0309-non-reasoning'}
+top_10:
+  e9fe261d-6860-4be4-8aca-d08c02e9041b  pts= 11  score=0.440
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 10  score=0.400
+  4744f665-4c9e-42a5-9f60-e5133ea058d0  pts= 10  score=0.400
+  4a5ef139-a0f0-428f-a26f-43265d16ef1a  pts= 10  score=0.400
+  7f455e6e-f48b-470f-aaf7-59982f05c413  pts=  9  score=0.360
+  9c3c3d8c-29b4-49f1-9df8-065543460c50  pts=  9  score=0.360
+  4cd0116f-aa65-4f99-815b-f412c8492610  pts=  9  score=0.360
+  7a9baed3-f133-4c56-a56d-e0e689fccc49  pts=  8  score=0.320
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc  pts=  8  score=0.320
+  f0b1254f-98d4-451f-a8e3-1ee55756a310  pts=  8  score=0.320
+
+--- 2026-04-28T16:44:03+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 5  calls: 65 (baseline 65, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=65 fallbacks=65
+score_dist: min=0.000 p25=0.080 median=0.160 p75=0.240 max=0.440 mean=0.174
+top_bucket_dispersion: 4 (≥6 healthy)
+latency: wall=2563ms  per_call p50=100ms p99=257ms
+fallbacks:
+  (65x) Other: BadRequestError: Error code: 400 - {'code': 'Client specified an invalid argument', 'error': 'Model not found: grok-4-20-0309-non-reasoning'}
+top_10:
+  e9fe261d-6860-4be4-8aca-d08c02e9041b  pts= 11  score=0.440
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 10  score=0.400
+  4744f665-4c9e-42a5-9f60-e5133ea058d0  pts= 10  score=0.400
+  4a5ef139-a0f0-428f-a26f-43265d16ef1a  pts= 10  score=0.400
+  7f455e6e-f48b-470f-aaf7-59982f05c413  pts=  9  score=0.360
+  9c3c3d8c-29b4-49f1-9df8-065543460c50  pts=  9  score=0.360
+  4cd0116f-aa65-4f99-815b-f412c8492610  pts=  9  score=0.360
+  7a9baed3-f133-4c56-a56d-e0e689fccc49  pts=  8  score=0.320
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc  pts=  8  score=0.320
+  f0b1254f-98d4-451f-a8e3-1ee55756a310  pts=  8  score=0.320
+
+--- 2026-04-28T16:47:43+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.040 median=0.140 p75=0.240 max=0.800 mean=0.174
+top_bucket_dispersion: 9 (≥6 healthy)
+latency: wall=4029ms  per_call p50=636ms p99=1200ms
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 40  score=0.800
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 39  score=0.780
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 32  score=0.640
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc  pts= 31  score=0.620
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 29  score=0.580
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc  pts= 26  score=0.520
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 26  score=0.520
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 25  score=0.500
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15  pts= 22  score=0.440
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 20  score=0.400
+
+--- 2026-04-28T16:48:29+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 320  R: 10  calls: 230 (baseline 230, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=230 fallbacks=230
+score_dist: min=0.000 p25=0.040 median=0.060 p75=0.100 max=0.300 mean=0.073
+top_bucket_dispersion: 5 (≥6 healthy)
+latency: wall=2561ms  per_call p50=476ms p99=972ms
+fallbacks:
+  (230x) Other: BadRequestError: Error code: 400 - {'code': 'Client specified an invalid argument', 'error': 'Model not found: grok-4-20-0309-non-reasoning'}
+top_10:
+  e82b6ec2-7a8c-423a-86dd-f7073f78808a  pts= 15  score=0.300
+  15de205a-b141-45ba-9085-f297aff36059  pts= 13  score=0.260
+  674d124c-c8fb-4346-ae2d-02aa0beb9d87  pts= 13  score=0.260
+  0ff0e833-fdb4-4497-8260-228227cbcdf4  pts= 13  score=0.260
+  b5b35b00-fd63-4e19-9282-72c202ee3abd  pts= 13  score=0.260
+  232e8fc6-b4b6-485c-8ff1-95eaea865b09  pts= 11  score=0.220
+  60f037a2-96cc-431c-b56d-804b0253b174  pts= 10  score=0.200
+  8b6bfb9a-adff-4992-85cb-944ca4eb029d  pts= 10  score=0.200
+  d603537a-852b-4353-944a-2be816aa69e9  pts= 10  score=0.200
+  7e4d5fd4-721c-46a0-8eec-576f3974b1a4  pts=  9  score=0.180
+
+--- 2026-04-28T16:50:51+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 320  R: 10  calls: 230 (baseline 230, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.020 p75=0.080 max=0.660 mean=0.073
+top_bucket_dispersion: 7 (≥6 healthy)
+latency: wall=6665ms  per_call p50=834ms p99=1454ms
+top_10:
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 33  score=0.660
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 30  score=0.600
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 30  score=0.600
+  1912b76b-787a-4ab7-95a9-1f827e629297  pts= 28  score=0.560
+  da8d1d58-4173-42ba-b000-cc950ce7ffb6  pts= 26  score=0.520
+  60510a11-9865-427d-851f-210a65f311ab  pts= 25  score=0.500
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 23  score=0.460
+  c78e78d0-e1d8-45bc-8a40-40e523f80e3d  pts= 23  score=0.460
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 22  score=0.440
+  7f698ac7-10de-4b1a-abd7-7fa06fff0ca1  pts= 22  score=0.440
+
+--- 2026-04-28T17:47:42+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 320  R: 10  calls: 230 (baseline 230, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.040 p75=0.100 max=0.540 mean=0.073
+top_bucket_dispersion: 7 (≥6 healthy)
+latency: wall=5620ms  per_call p50=866ms p99=1403ms
+top_10:
+  79ea4bfd-b54d-44e7-8714-6ab15741394d  pts= 27  score=0.540
+  424299ab-facf-44f9-a012-d6f127bc6097  pts= 23  score=0.460
+  c9d5c60b-8766-4b46-b628-b6454afc5a20  pts= 22  score=0.440
+  a15e57e4-d90d-4093-aff2-6fb6e1f815f5  pts= 21  score=0.420
+  f2befce9-cf65-4472-b3ec-33dbcdfebbb9  pts= 19  score=0.380
+  725afc8e-2bbd-4d8d-bb5a-1e16fc1cea9a  pts= 19  score=0.380
+  1d744192-e44b-4ba8-b3b0-8674b55a5fec  pts= 19  score=0.380
+  aeb4f2af-5aa1-49c2-ab92-47c5bbaab5f0  pts= 18  score=0.360
+  d80abf6e-8396-4531-8747-508813994180  pts= 17  score=0.340
+  3ec312f2-2409-4c60-83b6-d435dfb6da13  pts= 17  score=0.340
+
+--- 2026-04-28T18:01:04+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.040 median=0.120 p75=0.240 max=0.640 mean=0.174
+top_bucket_dispersion: 6 (≥6 healthy)
+latency: wall=37948ms  per_call p50=646ms p99=24987ms
+top_10:
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc  pts= 32  score=0.640
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 32  score=0.640
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 31  score=0.620
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 30  score=0.600
+  bb44a469-3423-41fd-a8e5-9d07a1e73976  pts= 28  score=0.560
+  2284143a-f5f8-48ea-9c86-2915a942643b  pts= 27  score=0.540
+  1912b76b-787a-4ab7-95a9-1f827e629297  pts= 27  score=0.540
+  60510a11-9865-427d-851f-210a65f311ab  pts= 27  score=0.540
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 26  score=0.520
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 26  score=0.520
+
+--- 2026-04-28T18:07:46+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 320  R: 10  calls: 230 (baseline 230, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.020 p75=0.080 max=0.740 mean=0.073
+top_bucket_dispersion: 6 (≥6 healthy)
+latency: wall=148279ms  per_call p50=902ms p99=46631ms
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 37  score=0.740
+  60510a11-9865-427d-851f-210a65f311ab  pts= 29  score=0.580
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 29  score=0.580
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 25  score=0.500
+  328c1fe0-fc95-49f8-b196-e693a775eb8c  pts= 25  score=0.500
+  5216d75a-9296-4927-8498-7b3b4f9692ce  pts= 23  score=0.460
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 22  score=0.440
+  bb44a469-3423-41fd-a8e5-9d07a1e73976  pts= 22  score=0.440
+  c9f22e04-f059-4283-a871-b87f0d056d50  pts= 22  score=0.440
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 21  score=0.420
+
+--- 2026-04-28T18:15:54+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 100  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.060 median=0.100 p75=0.260 max=0.680 mean=0.174
+top_bucket_dispersion: 8 (≥6 healthy)
+latency: wall=3933ms  per_call p50=570ms p99=1234ms
+top_10:
+  c642e629-18e3-4086-991b-eed54462c13b  pts= 34  score=0.680
+  13b68e84-4c86-4989-9b34-f1fb2a698702  pts= 34  score=0.680
+  961cc71f-492c-4db4-9860-567471e9cdeb  pts= 32  score=0.640
+  ae58bbb2-09ff-4657-91dd-eccd828861d1  pts= 31  score=0.620
+  8c0d2650-99fe-4880-8717-e6b7c6ce1fb7  pts= 29  score=0.580
+  89a21378-0e71-44e2-a688-c2550a98d1f5  pts= 28  score=0.560
+  0f54029f-0429-4e73-9ecc-9b44d44a76dc  pts= 26  score=0.520
+  a69f1a22-a84b-46ee-acb4-ffa6877b53cc  pts= 26  score=0.520
+  14476b0b-1bc5-4684-816c-bcb955ef7b34  pts= 24  score=0.480
+  21eca161-7478-46da-9b14-4d9ff92655cd  pts= 23  score=0.460
+
+--- 2026-04-28T18:16:29+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dryness,dullness goals=definition
+products_in: 160  R: 10  calls: 130 (baseline 130, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.040 p75=0.140 max=0.660 mean=0.096
+top_bucket_dispersion: 7 (≥6 healthy)
+latency: wall=81899ms  per_call p50=780ms p99=43647ms
+top_10:
+  13b68e84-4c86-4989-9b34-f1fb2a698702  pts= 33  score=0.660
+  89a21378-0e71-44e2-a688-c2550a98d1f5  pts= 32  score=0.640
+  8c0d2650-99fe-4880-8717-e6b7c6ce1fb7  pts= 32  score=0.640
+  961cc71f-492c-4db4-9860-567471e9cdeb  pts= 29  score=0.580
+  ae58bbb2-09ff-4657-91dd-eccd828861d1  pts= 26  score=0.520
+  c642e629-18e3-4086-991b-eed54462c13b  pts= 26  score=0.520
+  264922be-9c98-4fc8-ad4b-7dc3ce401b25  pts= 22  score=0.440
+  8d9c3540-014a-41ff-b7ae-8071098f27ef  pts= 22  score=0.440
+  a69f1a22-a84b-46ee-acb4-ffa6877b53cc  pts= 20  score=0.400
+  14476b0b-1bc5-4684-816c-bcb955ef7b34  pts= 18  score=0.360
+
+--- 2026-04-28T19:03:28+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dullness,dryness goals=definition
+products_in: 160  R: 5  calls: 65 (baseline 65, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+self_correction: 31/65 (47.7%; healthy 15-40%)
+score_dist: min=0.000 p25=0.000 median=0.040 p75=0.120 max=0.920 mean=0.096
+top_bucket_dispersion: 5 (≥6 healthy)
+latency: wall=134244ms  per_call p50=10314ms p99=53245ms
+top_10:
+  8aad62bb-4100-489a-a53b-ae6827e656bd  pts= 23  score=0.920
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 18  score=0.720
+  96aaa230-f338-4d7b-afd8-b2ee8e1b3f53  pts= 13  score=0.520
+  157e3aa1-4c64-4f82-81fd-38e3b42985d8  pts= 13  score=0.520
+  7f698ac7-10de-4b1a-abd7-7fa06fff0ca1  pts= 12  score=0.480
+  5216d75a-9296-4927-8498-7b3b4f9692ce  pts= 12  score=0.480
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 11  score=0.440
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts= 11  score=0.440
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts= 11  score=0.440
+  6941448c-508d-46b8-8e80-453e4709cea6  pts= 11  score=0.440
+
+--- 2026-04-28T19:31:46+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dullness,dryness goals=definition
+products_in: 160  R: 5  calls: 65 (baseline 65, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+self_correction: 28/65 (43.1%; healthy 15-40%)
+score_dist: min=0.000 p25=0.000 median=0.040 p75=0.120 max=0.800 mean=0.096
+top_bucket_dispersion: 7 (≥6 healthy)
+latency: wall=134863ms  per_call p50=11391ms p99=50026ms
+cache: prompt=483330 cached=70093 (14.5%)  completion=25576
+top_10:
+  ea073aca-56b5-4db3-a21b-e804d0c6c903  pts= 20  score=0.800
+  820b5a8f-3368-49cf-b977-39af03703e57  pts= 19  score=0.760
+  7d4c392d-8bd0-4b83-8972-d47db719a62a  pts= 17  score=0.680
+  ae58bbb2-09ff-4657-91dd-eccd828861d1  pts= 15  score=0.600
+  460ab614-9cda-4d64-8fce-088ab6f5023f  pts= 15  score=0.600
+  abd11f58-799d-47f8-afe7-57c4f9c31e0a  pts= 15  score=0.600
+  228347d5-bb88-4105-848f-1d439f92cb98  pts= 13  score=0.520
+  c37e5c54-f5a2-4f07-b513-c245878e8595  pts= 12  score=0.480
+  b562b82b-090e-428b-8091-34e3c929daa6  pts= 11  score=0.440
+  f0b67be2-8f18-4ba3-9038-277807644932  pts= 11  score=0.440
+
+--- 2026-04-28T20:10:14+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=frizz,dullness,dryness goals=definition
+products_in: 160  R: 5  calls: 55 (baseline 55, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.050 p75=0.150 max=0.600 mean=0.089
+top_bucket_dispersion: 5 (≥6 healthy)
+latency: wall=132045ms  per_call p50=12551ms p99=56175ms
+cache: prompt=438478 cached=60392 (13.8%)  completion=17762
+top_10:
+  a24158cb-f88a-4439-99fc-fc3ce2b298a4  pts= 12  score=0.600
+  a69f1a22-a84b-46ee-acb4-ffa6877b53cc  pts= 10  score=0.500
+  13b68e84-4c86-4989-9b34-f1fb2a698702  pts=  9  score=0.450
+  ea073aca-56b5-4db3-a21b-e804d0c6c903  pts=  8  score=0.400
+  961cc71f-492c-4db4-9860-567471e9cdeb  pts=  8  score=0.400
+  885ecbb9-db4c-4f06-bfa0-a4474a36edf1  pts=  8  score=0.400
+  df817473-ab8a-4339-b6ce-47ce2d4c15fb  pts=  8  score=0.400
+  b562b82b-090e-428b-8091-34e3c929daa6  pts=  8  score=0.400
+  eb5c7ec7-8b45-4002-a1d3-8be48b810dfa  pts=  8  score=0.400
+  7551f442-0b02-414c-aad8-7532621a05c0  pts=  6  score=0.300
+
+--- 2026-04-28T20:58:59+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=dryness,dullness,frizz goals=definition story_len=385
+products_in: 160  R: 5  calls: 55 (baseline 55, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.050 p75=0.100 max=0.800 mean=0.089
+top_bucket_dispersion: 5 (≥6 healthy)
+latency: wall=56485ms  per_call p50=6526ms p99=22334ms
+cache: prompt=461512 cached=73505 (15.9%)  completion=31708
+top_10:
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 16  score=0.800
+  8aad62bb-4100-489a-a53b-ae6827e656bd  pts= 16  score=0.800
+  0ff0e833-fdb4-4497-8260-228227cbcdf4  pts= 13  score=0.650
+  67500550-71a6-4ae8-bb3b-5b8b1ecbd4fa  pts= 10  score=0.500
+  15c3b207-6619-4b8c-a0fc-ee2968d69742  pts= 10  score=0.500
+  c67fdef2-4d25-422e-b818-fd972304ccd7  pts=  8  score=0.400
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts=  7  score=0.350
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a  pts=  7  score=0.350
+  6941448c-508d-46b8-8e80-453e4709cea6  pts=  7  score=0.350
+  cd2417f0-23fe-4a46-bb36-613144cf3d06  pts=  7  score=0.350
+
+--- 2026-04-28T21:05:32+00:00 ---
+profile: curl=curly scalp=balanced density=medium thickness=medium porosity=medium concerns=dryness,dullness,frizz goals=definition story_len=385
+products_in: 50  R: 5  calls: 40 (baseline 40, overhead +0.0%)
+failures: validation=0 network=0 rate_limit=0 other=0 fallbacks=0
+score_dist: min=0.000 p25=0.000 median=0.075 p75=0.300 max=0.850 mean=0.185
+top_bucket_dispersion: 7 (≥6 healthy)
+latency: wall=47630ms  per_call p50=10132ms p99=14321ms
+cache: prompt=201720 cached=28800 (14.3%)  completion=24334
+top_10:
+  f49b5be7-4e89-409e-9454-7ea70e3c9300  pts= 17  score=0.850
+  67500550-71a6-4ae8-bb3b-5b8b1ecbd4fa  pts= 17  score=0.850
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076  pts= 16  score=0.800
+  15c3b207-6619-4b8c-a0fc-ee2968d69742  pts= 14  score=0.700
+  ad328d65-c91f-43a6-992f-af4eeb33ae1f  pts= 13  score=0.650
+  6c085402-7f57-4dd4-93c4-dc49aa22eab8  pts= 12  score=0.600
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc  pts=  8  score=0.400
+  eceeba24-87a1-4b48-acb1-8b64ef321c92  pts=  8  score=0.400
+  b85d94fc-81a0-4c0e-9f55-ea0b11e077ec  pts=  8  score=0.400
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6  pts=  7  score=0.350
+

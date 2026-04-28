@@ -373,6 +373,11 @@ interface PromptInputBoxProps {
   /** Controlled "use my hair profile" toggle. Defaults to true. */
   personalize?: boolean;
   onPersonalizeChange?: (next: boolean) => void;
+  /** Controlled "Think" toggle. When true, the chat backend widens
+   * Cohere's `top_k` from 100 → 320 so the tournament has more
+   * candidates to discriminate. Judge model is unchanged. */
+  thinking?: boolean;
+  onThinkingChange?: (next: boolean) => void;
   /** Controlled value for the textarea. */
   value?: string;
   onValueChange?: (next: string) => void;
@@ -390,6 +395,8 @@ export const PromptInputBox = React.forwardRef(
       className,
       personalize = true,
       onPersonalizeChange,
+      thinking: thinkingProp,
+      onThinkingChange,
       value,
       onValueChange,
       notice,
@@ -398,7 +405,9 @@ export const PromptInputBox = React.forwardRef(
     const input = value ?? internalInput;
     const setInput = onValueChange ?? setInternalInput;
     const [isRecording, setIsRecording] = React.useState(false);
-    const [showThink, setShowThink] = React.useState(false);
+    const [internalThinking, setInternalThinking] = React.useState(false);
+    const showThink = thinkingProp ?? internalThinking;
+    const setShowThink = onThinkingChange ?? setInternalThinking;
     const [showFilter, setShowFilter] = React.useState(false);
     const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
@@ -413,8 +422,7 @@ export const PromptInputBox = React.forwardRef(
 
     const handleSubmit = () => {
       if (!input.trim()) return;
-      const formatted = showThink ? `[Think: ${input}]` : input;
-      onSend(formatted);
+      onSend(input);
       // Keep the input populated after submit so the user can read /
       // edit the query while the warning gate is up. The PromptSection
       // unmounts on navigation, so persistence beyond that point is
@@ -578,7 +586,7 @@ export const PromptInputBox = React.forwardRef(
                 type="button"
                 aria-label="Think deeply"
                 aria-pressed={showThink}
-                onClick={() => setShowThink((prev) => !prev)}
+                onClick={() => setShowThink(!showThink)}
                 className={cn(
                   "flex h-[50px] items-center gap-[9px] rounded-xl border px-[15px] transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40",

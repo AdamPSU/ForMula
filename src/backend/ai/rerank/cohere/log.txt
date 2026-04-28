@@ -1354,3 +1354,795 @@ top_results:
   a2db305d-5fb3-422f-b103-67482de2a70a 0.9485
   98d045f0-8602-4045-8566-68965c556c55 0.9481
 
+--- 2026-04-28T12:43:29+00:00 ---
+query:
+User query: shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 93497.5
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9645
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9566
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9536
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9529
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9529
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9492
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9485
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9481
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9477
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9477
+
+--- 2026-04-28T13:26:16+00:00 ---
+query:
+User query: leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 900.5
+top_results:
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9603
+  97038372-4914-46d9-9325-d965ee8fba34 0.9525
+  90c986dc-a364-4874-b776-92d38ef218bb 0.9525
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9514
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9507
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9503
+  9314208c-8706-4aae-88e8-815b1842ae9b 0.9500
+  c49b9cd6-852e-4297-983c-e04984699e4c 0.9492
+  a2db305d-5fb3-422f-b103-67482de2a70a 0.9485
+  98d045f0-8602-4045-8566-68965c556c55 0.9481
+
+--- 2026-04-28T13:34:56+00:00 ---
+query:
+User query: leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 1035.9
+top_results:
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9603
+  97038372-4914-46d9-9325-d965ee8fba34 0.9525
+  90c986dc-a364-4874-b776-92d38ef218bb 0.9525
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9514
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9507
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9503
+  9314208c-8706-4aae-88e8-815b1842ae9b 0.9500
+  c49b9cd6-852e-4297-983c-e04984699e4c 0.9492
+  a2db305d-5fb3-422f-b103-67482de2a70a 0.9485
+  98d045f0-8602-4045-8566-68965c556c55 0.9481
+
+--- 2026-04-28T13:35:38+00:00 ---
+query:
+User query: give me a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1429.8
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9643
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9539
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9488
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9488
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9477
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9477
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9477
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9473
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9469
+  50885f3c-f47f-42d7-9e32-25f3f8546550 0.9424
+
+--- 2026-04-28T14:26:37+00:00 ---
+query:
+User query: [Think: shampoo]
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 2114.0
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9615
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9569
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9507
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9500
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9492
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9488
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9488
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9469
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9465
+  68457795-f6ed-4228-803e-6573c65b2548 0.9449
+
+--- 2026-04-28T14:34:06+00:00 ---
+query:
+User query: i want a high quality shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1868.7
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9562
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9457
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9457
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9449
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9435
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9405
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9392
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6 0.9387
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9385
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9373
+
+--- 2026-04-28T14:41:46+00:00 ---
+query:
+User query: i want a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1904.1
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9621
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9503
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9488
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9488
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9477
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9465
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9461
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9453
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9449
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9420
+
+--- 2026-04-28T15:11:06+00:00 ---
+query:
+User query: i want a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1952.9
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9621
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9503
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9488
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9488
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9477
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9465
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9461
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9453
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9449
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9420
+
+--- 2026-04-28T15:25:02+00:00 ---
+query:
+User query: shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1850.3
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9645
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9566
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9536
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9529
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9529
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9492
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9485
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9481
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9477
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9477
+
+--- 2026-04-28T15:25:32+00:00 ---
+query:
+User query: shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1840.9
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9645
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9566
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9536
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9529
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9529
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9492
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9485
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9481
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9477
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9477
+
+--- 2026-04-28T16:27:53+00:00 ---
+query:
+User query: a good quality shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1844.9
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9591
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9503
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9488
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9469
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9469
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9469
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9461
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9457
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6 0.9439
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9424
+
+--- 2026-04-28T16:29:21+00:00 ---
+query:
+User query: a good quality shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1964.3
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9591
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9503
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9488
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9469
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9469
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9469
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9461
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9457
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6 0.9439
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9424
+
+--- 2026-04-28T16:34:43+00:00 ---
+query:
+User query: a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 2160.1
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9664
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9546
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9532
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9529
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9525
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9521
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9514
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9514
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9496
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9477
+
+--- 2026-04-28T16:43:45+00:00 ---
+query:
+User query: a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 2016.7
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9664
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9546
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9532
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9529
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9525
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9521
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9514
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9514
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9496
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9477
+
+--- 2026-04-28T16:44:03+00:00 ---
+query:
+User query: a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1909.0
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9664
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9546
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9532
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9529
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9525
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9521
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9514
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9514
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9496
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9477
+
+--- 2026-04-28T16:47:43+00:00 ---
+query:
+User query: a good, high-quality shampoo for my hair needs
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1980.7
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9645
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9549
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9539
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9529
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9525
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9511
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9507
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9488
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9488
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9485
+
+--- 2026-04-28T16:48:29+00:00 ---
+query:
+User query: a good high quality shampoo for my hair needs
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1964.4
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9609
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9503
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9503
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9488
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9481
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9453
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9447
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9447
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9443
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9441
+
+--- 2026-04-28T16:50:51+00:00 ---
+query:
+User query: a good, high quality shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1540.0
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9615
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9514
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9507
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9503
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9500
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9492
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9465
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6 0.9465
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9465
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9465
+
+--- 2026-04-28T17:47:42+00:00 ---
+query:
+User query: a good shampoo or conditioner for my hair type
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 2465
+docs_sent: 2465
+elapsed_ms: 3707.9
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9546
+  d80abf6e-8396-4531-8747-508813994180 0.9511
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9435
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9418
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9394
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9389
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9378
+  47caeef5-1967-4675-9b7d-6f4829c38bf8 0.9378
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9376
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9371
+
+--- 2026-04-28T18:01:04+00:00 ---
+query:
+User query: a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1264.8
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9664
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9546
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9532
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9529
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9525
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9521
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9514
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9514
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9496
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9477
+
+--- 2026-04-28T18:07:46+00:00 ---
+model: rerank-v4.0-pro
+query:
+User query: i need a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 2192.5
+top_results:
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9798
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9782
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9772
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc 0.9768
+  da8d1d58-4173-42ba-b000-cc950ce7ffb6 0.9766
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9744
+  6883f289-bbdb-4b40-9c4b-7dd6bd8a11dc 0.9742
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9742
+  2284143a-f5f8-48ea-9c86-2915a942643b 0.9736
+  96aaa230-f338-4d7b-afd8-b2ee8e1b3f53 0.9734
+
+--- 2026-04-28T18:15:54+00:00 ---
+model: rerank-v4.0-fast
+query:
+User query: find me a good leave in conditioner, above $10 but below $30
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 198
+docs_sent: 198
+elapsed_ms: 680.4
+top_results:
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9055
+  df834726-cf7e-48ad-9bfd-cd6438baa6f7 0.8917
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.8680
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.8645
+  97e0d4d0-e59c-43e8-b1d7-adcd88fa1e41 0.8600
+  8cfb32cd-638b-4bb8-9a44-2819d76dd1f2 0.8535
+  a2db305d-5fb3-422f-b103-67482de2a70a 0.8509
+  98d045f0-8602-4045-8566-68965c556c55 0.8502
+  5b7f7816-845b-4e35-8b7e-02a0ab1f8f10 0.8473
+  0f54029f-0429-4e73-9ecc-9b44d44a76dc 0.8459
+
+--- 2026-04-28T18:16:29+00:00 ---
+model: rerank-v4.0-pro
+query:
+User query: a good leave in conditioner, above $10 but below $30
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 198
+docs_sent: 198
+elapsed_ms: 1108.2
+top_results:
+  8cfb32cd-638b-4bb8-9a44-2819d76dd1f2 0.9373
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9362
+  5b7f7816-845b-4e35-8b7e-02a0ab1f8f10 0.9242
+  0206277a-01bb-4933-9d76-d79c947eb6a2 0.9224
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9210
+  ac5eda4c-7f2a-4dce-8a73-9d561e558d4c 0.9193
+  99ea5ca3-2289-4feb-89a2-395f60258727 0.9161
+  e1e8dc0c-dc9a-4082-9538-525157549873 0.9146
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9135
+  a2db305d-5fb3-422f-b103-67482de2a70a 0.9121
+
+--- 2026-04-28T19:03:28+00:00 ---
+model: rerank-v4.0-pro
+query:
+User query: give me a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dullness, dryness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 2207.9
+top_results:
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9792
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9773
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9761
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc 0.9759
+  da8d1d58-4173-42ba-b000-cc950ce7ffb6 0.9750
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9734
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9732
+  6883f289-bbdb-4b40-9c4b-7dd6bd8a11dc 0.9728
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6 0.9724
+  96aaa230-f338-4d7b-afd8-b2ee8e1b3f53 0.9717
+
+--- 2026-04-28T19:31:46+00:00 ---
+model: rerank-v4.0-pro
+query:
+User query: give me a good leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dullness, dryness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 1499.6
+top_results:
+  4d410476-d7f2-440c-afef-3f7658538306 0.9846
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9785
+  8cfb32cd-638b-4bb8-9a44-2819d76dd1f2 0.9770
+  7551f442-0b02-414c-aad8-7532621a05c0 0.9765
+  5b7f7816-845b-4e35-8b7e-02a0ab1f8f10 0.9746
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9746
+  c642e629-18e3-4086-991b-eed54462c13b 0.9738
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9732
+  0206277a-01bb-4933-9d76-d79c947eb6a2 0.9728
+  ac5eda4c-7f2a-4dce-8a73-9d561e558d4c 0.9726
+
+--- 2026-04-28T20:10:14+00:00 ---
+model: rerank-v4.0-pro
+query:
+User query: give me a good leave-in conditinoer
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dullness, dryness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 1530.5
+top_results:
+  4d410476-d7f2-440c-afef-3f7658538306 0.9846
+  7551f442-0b02-414c-aad8-7532621a05c0 0.9788
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9787
+  8cfb32cd-638b-4bb8-9a44-2819d76dd1f2 0.9780
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9754
+  0206277a-01bb-4933-9d76-d79c947eb6a2 0.9754
+  5b7f7816-845b-4e35-8b7e-02a0ab1f8f10 0.9750
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9744
+  c642e629-18e3-4086-991b-eed54462c13b 0.9740
+  728cbf94-ddf5-4ae2-a60a-739c824ef754 0.9738
+
+--- 2026-04-28T20:58:58+00:00 ---
+model: rerank-v4.0-pro
+query:
+User query: I'm looking for a good shampoo between $9.99 and $30
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: dryness, dullness, frizz
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 607
+docs_sent: 607
+elapsed_ms: 1588.2
+top_results:
+  ffc5f380-222c-4064-97a7-2eb9d4fa8b15 0.9390
+  9ead07f2-1f1f-40af-a9bd-94017dce74dc 0.9353
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9350
+  6883f289-bbdb-4b40-9c4b-7dd6bd8a11dc 0.9325
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9277
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9273
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6 0.9265
+  7c0fd9e6-0b4a-49fb-8eca-936ef1268076 0.9255
+  1fd16e4b-9c32-4741-a3f2-51e516698706 0.9236
+  bb44a469-3423-41fd-a8e5-9d07a1e73976 0.9233
+
+--- 2026-04-28T21:05:32+00:00 ---
+model: rerank-v4.0-fast
+query:
+User query: i want a good shampoo between $9.99 and $30
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: dryness, dullness, frizz
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 607
+docs_sent: 607
+elapsed_ms: 1196.2
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.8508
+  6883f289-bbdb-4b40-9c4b-7dd6bd8a11dc 0.8469
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.8361
+  50885f3c-f47f-42d7-9e32-25f3f8546550 0.8228
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.8159
+  d53b33a3-c659-48a7-aabf-d3d7acb6aa82 0.8096
+  80c9b153-9286-4561-966f-95f5abe9508b 0.8093
+  84a9101e-bb7f-4755-a632-61bfe8f5b9a6 0.7957
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.7954
+  f0b1254f-98d4-451f-a8e3-1ee55756a310 0.7944
+

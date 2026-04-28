@@ -224,6 +224,7 @@ async def _run_rerank(
             "user_text": state["user_text"],
             "profile": profile,
             "products": state["products"],
+            "thinking": bool(state.get("thinking")),
         },
         context=RecommendContext(pool=runtime.context.pool),
     )
