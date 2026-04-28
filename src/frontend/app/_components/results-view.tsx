@@ -10,7 +10,7 @@ import { useChatSession } from "@/lib/chat/use-chat-session";
 
 import { ChatPanel } from "./chat-panel";
 
-const TOP_N = 15;
+const TOP_N = 10;
 
 function buildSubtitle({
   surfacedCount,
@@ -86,10 +86,10 @@ export function ResultsView({ threadId }: { threadId: string }) {
         className="fixed inset-x-0 top-0 h-screen w-full object-cover object-top motion-reduce:hidden"
       />
 
-      {/* Directional overlay — darkens the left for legibility, leaves the character clean. */}
+      {/* Directional overlay — darkens the right for legibility, leaves the character clean. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-l from-black/65 via-black/20 to-transparent"
       />
 
       <section
@@ -136,11 +136,7 @@ export function ResultsView({ threadId }: { threadId: string }) {
           className="rise -mt-[2vh] flex min-h-0 w-full max-w-[700px] flex-1 self-end"
           style={{ animationDelay: "750ms" }}
         >
-          <ChatPanel
-            session={session}
-            products={products}
-            shortlist={top}
-          />
+          <ChatPanel session={session} shortlist={top} />
         </div>
       </section>
     </main>

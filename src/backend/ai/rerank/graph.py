@@ -23,14 +23,17 @@ serializable and shouldn't flow through state.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any, Literal, TypedDict
+from uuid import UUID
 
 import asyncpg
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import Command
 
+from ai._timing import log_timing
 from ai.judge import ProductJudgment, score_many
 from ai.rerank.cohere import ScoredProduct, rerank
 from ai.rerank.sql_filter.graph import FilterContext
@@ -39,7 +42,10 @@ from ai.rerank.sql_filter.log import log_from_state
 from profiles.models import HairProfile
 from profiles.repository import get_latest_hair_profile
 
-_TOP_K = 150
+# Cohere's `top_k` and the judge's `judge_top_n` are intentionally the
+# same number: every Cohere-surfaced row is judged, no slack tier. Bump
+# both together if you ever want a wider tournament.
+_TOP_K = 100
 _JUDGE_TOP_N = 100
 
 
@@ -90,6 +96,7 @@ async def _hydrate_brand_names(
 async def _filter(
     state: FilterState, runtime: Runtime[RecommendContext]
 ) -> Command[Literal["load_profile", "__end__"]]:
+    sql_started = time.perf_counter()
     try:
         sub = await sql_filter_graph.ainvoke(
             {"user_text": state["user_text"], "attempt": 0},
@@ -98,16 +105,38 @@ async def _filter(
     except Exception as exc:
         msg = f"EXEC: {type(exc).__name__}: {exc}"
         log_from_state({"user_text": state["user_text"], "final_error": msg})
+        log_timing(
+            "filter",
+            elapsed_ms=round((time.perf_counter() - sql_started) * 1000, 1),
+            final_error=msg,
+        )
         return Command(update={"final_error": msg}, goto=END)
+    sql_filter_ms = (time.perf_counter() - sql_started) * 1000
 
     log_from_state(sub)
 
     if sub.get("final_error"):
+        log_timing(
+            "filter",
+            elapsed_ms=round(sql_filter_ms, 1),
+            sql_filter_ms=round(sql_filter_ms, 1),
+            final_error=sub["final_error"],
+        )
         return Command(update={"final_error": sub["final_error"]}, goto=END)
 
     rows = sub.get("rows") or []
     products = [dict(r) for r in rows]
+    brand_started = time.perf_counter()
     await _hydrate_brand_names(runtime.context.pool, products)
+    brand_ms = (time.perf_counter() - brand_started) * 1000
+    log_timing(
+        "filter",
+        elapsed_ms=round(sql_filter_ms + brand_ms, 1),
+        sql_filter_ms=round(sql_filter_ms, 1),
+        brand_hydration_ms=round(brand_ms, 1),
+        attempts=sub.get("attempt"),
+        products_count=len(products),
+    )
     return Command(
         update={
             "sql": sub.get("sql"),
@@ -122,10 +151,17 @@ async def _filter(
 async def _load_profile(
     state: FilterState, runtime: Runtime[RecommendContext]
 ) -> Command[Literal["__end__"]]:
+    started = time.perf_counter()
     if not state.get("personalize", True):
+        log_timing("load_profile", elapsed_ms=0.0, skipped="personalize=false")
         return Command(update={"profile": None}, goto=END)
     async with runtime.context.pool.acquire() as conn:
         profile = await get_latest_hair_profile(conn, state["user_id"])
+    log_timing(
+        "load_profile",
+        elapsed_ms=round((time.perf_counter() - started) * 1000, 1),
+        has_profile=profile is not None,
+    )
     return Command(update={"profile": profile}, goto=END)
 
 
@@ -158,7 +194,18 @@ class RerankState(TypedDict, total=False):
 async def _cohere_rerank(
     state: RerankState, runtime: Runtime[RecommendContext]
 ) -> Command[Literal["judge", "__end__"]]:
-    candidate_ids = [p["id"] for p in state["products"]]
+    started = time.perf_counter()
+    # The chat path stringifies UUIDs upstream so the msgpack checkpointer
+    # can serialize products (`ai/chat/graph.py::_msgpack_safe_products`),
+    # whereas /recommend hands us native UUIDs straight from asyncpg.
+    # `fetch_rerank_docs` uses `WHERE id = ANY($1::uuid[])` and returns
+    # UUID-keyed rows, so a str id never matches and every chat call
+    # silently returned zero docs. Coerce here so this graph is callable
+    # from either path.
+    candidate_ids: list[UUID] = [
+        p["id"] if isinstance(p["id"], UUID) else UUID(p["id"])
+        for p in state["products"]
+    ]
     try:
         async with runtime.context.pool.acquire() as conn:
             scored = await rerank(
@@ -169,10 +216,24 @@ async def _cohere_rerank(
                 top_k=_TOP_K,
             )
     except Exception as exc:
+        log_timing(
+            "cohere_rerank",
+            elapsed_ms=round((time.perf_counter() - started) * 1000, 1),
+            candidates=len(candidate_ids),
+            final_error=f"{type(exc).__name__}: {exc}",
+        )
         return Command(
             update={"final_error": f"COHERE: {type(exc).__name__}: {exc}"},
             goto=END,
         )
+
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    log_timing(
+        "cohere_rerank",
+        elapsed_ms=round(elapsed_ms, 1),
+        candidates=len(candidate_ids),
+        scored_count=len(scored),
+    )
 
     if not scored:
         return Command(update={"cohere_scored": []}, goto=END)
@@ -182,6 +243,7 @@ async def _cohere_rerank(
 async def _judge(
     state: RerankState, runtime: Runtime[RecommendContext]
 ) -> Command[Literal["__end__"]]:
+    started = time.perf_counter()
     try:
         judgments, _ = await score_many(
             runtime.context.pool,
@@ -191,10 +253,22 @@ async def _judge(
             judge_top_n=_JUDGE_TOP_N,
         )
     except Exception as exc:
+        log_timing(
+            "judge",
+            elapsed_ms=round((time.perf_counter() - started) * 1000, 1),
+            candidates=len(state["cohere_scored"]),
+            final_error=f"{type(exc).__name__}: {exc}",
+        )
         return Command(
             update={"final_error": f"JUDGE: {type(exc).__name__}: {exc}"},
             goto=END,
         )
+    log_timing(
+        "judge",
+        elapsed_ms=round((time.perf_counter() - started) * 1000, 1),
+        candidates=len(state["cohere_scored"]),
+        judgments_count=len(judgments),
+    )
     return Command(update={"judgments": judgments}, goto=END)
 
 

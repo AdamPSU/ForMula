@@ -15,7 +15,6 @@ The response is SSE (`text/event-stream`). Event vocabulary:
     type=thread             {thread_id}
     type=messages_delta     {content}
     type=message_complete   {}
-    type=tool_call          {id, name, arguments}
     type=phase              {phase}
     type=interrupt          {phase}
     type=final_error        {error}
@@ -171,35 +170,33 @@ async def chat_state(
     judgments = values.get("judgments") or []
     cohere_scored = values.get("cohere_scored") or []
 
+    # Products carry stringified UUIDs (see `_msgpack_safe_products`),
+    # and judgments / cohere_scored are plain dicts dumped from Pydantic
+    # with `mode="json"` — so every product_id lookup here is a string.
     by_id = {p["id"]: p for p in products}
-    cohere_by_id = {s.product_id: s for s in cohere_scored}
+    cohere_by_id = {s["product_id"]: s for s in cohere_scored}
 
+    # Single source of truth for shortlist ordering: the judge
+    # tournament. If judgments aren't populated (no profile, gate
+    # skipped, or judge produced nothing) we return raw SQL order —
+    # never Cohere order. Showing Cohere here would silently
+    # contradict the LLM's recommendations, which read from
+    # `judgments` exclusively.
     if values.get("judged"):
         ordered = []
         for j in judgments:
-            product = by_id.get(j.product_id)
+            pid = j["product_id"]
+            product = by_id.get(pid)
             if product is None:
                 continue
-            cohere = cohere_by_id.get(j.product_id)
+            cohere = cohere_by_id.get(pid)
             ordered.append({
                 **product,
-                "relevance_score": cohere.relevance_score if cohere else None,
-                "rank": cohere.rank if cohere else None,
-                "overall_score": j.overall_score,
-                "tournament_points": j.tournament_points,
-                "final_rank": j.final_rank,
-            })
-        result_products = ordered
-    elif values.get("reranked"):
-        ordered = []
-        for s in cohere_scored:
-            product = by_id.get(s.product_id)
-            if product is None:
-                continue
-            ordered.append({
-                **product,
-                "relevance_score": s.relevance_score,
-                "rank": s.rank,
+                "relevance_score": cohere["relevance_score"] if cohere else None,
+                "rank": cohere["rank"] if cohere else None,
+                "overall_score": j["overall_score"],
+                "tournament_points": j["tournament_points"],
+                "final_rank": j["final_rank"],
             })
         result_products = ordered
     else:

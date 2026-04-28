@@ -9,7 +9,6 @@ import type {
   ChatPhase,
   ChatStateResponse,
   ResumePayload,
-  ToolCall,
 } from "@/lib/chat/types";
 
 type SessionState = {
@@ -45,7 +44,6 @@ type Action =
   | { type: "SET_THREAD"; thread_id: string }
   | { type: "SET_PHASE"; phase: ChatPhase; surfaced_count?: number }
   | { type: "DELTA"; content: string }
-  | { type: "TOOL_CALL"; tool_call: ToolCall }
   | { type: "INTERRUPT" }
   | { type: "ERROR"; error: string }
   | { type: "ADD_USER"; text: string }
@@ -84,27 +82,6 @@ function reducer(s: SessionState, a: Action): SessionState {
       return {
         ...s,
         messages: [...s.messages, { role: "assistant", content: a.content }],
-      };
-    }
-    case "TOOL_CALL": {
-      const last = s.messages[s.messages.length - 1];
-      if (last && last.role === "assistant") {
-        const updated: ChatMessage = {
-          ...last,
-          tool_calls: [...(last.tool_calls ?? []), a.tool_call],
-        };
-        return {
-          ...s,
-          messages: [...s.messages.slice(0, -1), updated],
-        };
-      }
-      // No assistant in flight — start one carrying just the tool call.
-      return {
-        ...s,
-        messages: [
-          ...s.messages,
-          { role: "assistant", tool_calls: [a.tool_call] },
-        ],
       };
     }
     case "INTERRUPT":
@@ -182,16 +159,6 @@ export function useChatSession() {
                 return;
               case "messages_delta":
                 dispatch({ type: "DELTA", content: evt.content });
-                return;
-              case "tool_call":
-                dispatch({
-                  type: "TOOL_CALL",
-                  tool_call: {
-                    id: evt.id,
-                    name: evt.name,
-                    arguments: evt.arguments,
-                  },
-                });
                 return;
               case "message_complete":
                 return;

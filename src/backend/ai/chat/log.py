@@ -1,9 +1,9 @@
 """Append-only debug log for the chat agent.
 
 Discardable — `rm log.txt` whenever it grows noisy. One block per turn
-captures the inputs, the LLM call payload, the assistant message, any
-tool_calls, and the resume value (when present). Used during debugging
-only; do not parse this file from production code.
+captures the inputs, the LLM call payload, the assistant message, and
+the resume value (when present). Used during debugging only; do not
+parse this file from production code.
 """
 
 from __future__ import annotations
@@ -31,7 +31,6 @@ def log_turn(
     surfaced_count: int | None,
     sent_messages: list[dict[str, Any]] | None,
     assistant_content: str | None,
-    tool_calls: list[dict[str, Any]] | None,
     resume_value: dict[str, Any] | None = None,
     final_error: str | None = None,
 ) -> None:
@@ -48,8 +47,6 @@ def log_turn(
         lines.append(f"sent: {_safe_json(sent_messages)}")
     if assistant_content is not None:
         lines.append(f"assistant: {assistant_content[:1000]!r}")
-    if tool_calls:
-        lines.append(f"tool_calls: {_safe_json(tool_calls)}")
     if resume_value is not None:
         lines.append(f"resume: {_safe_json(resume_value)}")
     if final_error:

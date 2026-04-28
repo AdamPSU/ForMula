@@ -1,28 +1,20 @@
 "use client";
 
-import { Message, MessageContent } from "@/components/ui/message";
-import type { FilterProduct } from "@/lib/api/filter";
-import type { ChatMessage } from "@/lib/chat/types";
+import Markdown from "react-markdown";
 
-import { ToolCardExplain } from "./tool-card-explain";
-import { ToolCardQuiz } from "./tool-card-quiz";
+import { Message, MessageContent } from "@/components/ui/message";
+import type { ChatMessage } from "@/lib/chat/types";
 
 type Props = {
   message: ChatMessage;
-  products: FilterProduct[];
   /** True while this message is the in-flight assistant streaming. */
   streaming?: boolean;
 };
 
-export function ChatMessageView({
-  message,
-  products,
-  streaming = false,
-}: Props) {
+export function ChatMessageView({ message, streaming = false }: Props) {
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
   const content = message.content?.trim() ?? "";
-  const hasToolCalls = !!message.tool_calls?.length;
 
   if (!isUser && !isAssistant) return null;
 
@@ -38,54 +30,68 @@ export function ChatMessageView({
     );
   }
 
-  // Assistant: bubble + optional full-width tool cards. The bubble is
-  // omitted when the LLM emits ONLY a tool_call (no prose) so we don't
-  // render an empty cream rectangle.
+  if (!content && !streaming) return null;
+
   return (
-    <>
-      <Message from="assistant">
-        {(content || streaming) && (
-          <MessageContent>
-            {streaming && !content ? (
-              <TypingDots />
-            ) : (
-              <p className="font-archivo whitespace-pre-wrap break-words">
-                {content}
-              </p>
-            )}
-          </MessageContent>
+    <Message from="assistant">
+      <MessageContent>
+        {streaming && !content ? (
+          <TypingDots />
+        ) : (
+          <AssistantMarkdown>{content}</AssistantMarkdown>
         )}
-      </Message>
-      {hasToolCalls && (
-        <div className="mt-2 mb-3 max-w-[80%] space-y-2 sm:max-w-[65%]">
-          {message.tool_calls!.map((tc) => {
-            if (tc.name === "explain_product") {
-              return (
-                <ToolCardExplain
-                  key={tc.id}
-                  productId={String(tc.arguments.product_id ?? "")}
-                  axesSummary={
-                    typeof tc.arguments.axes_summary === "string"
-                      ? (tc.arguments.axes_summary as string)
-                      : undefined
-                  }
-                  topSignals={
-                    Array.isArray(tc.arguments.top_signals)
-                      ? (tc.arguments.top_signals as string[])
-                      : undefined
-                  }
-                  products={products}
-                />
-              );
-            }
-            if (tc.name === "start_quiz") {
-              return <ToolCardQuiz key={tc.id} />;
-            }
-            return null;
-          })}
-        </div>
-      )}
-    </>
+      </MessageContent>
+    </Message>
+  );
+}
+
+function AssistantMarkdown({ children }: { children: string }) {
+  return (
+    <div className="font-archivo break-words">
+      <Markdown
+        disallowedElements={["img", "iframe", "script", "style"]}
+        unwrapDisallowed
+        components={{
+          p: ({ children }) => (
+            <p className="mb-2 last:mb-0 leading-[1.5]">{children}</p>
+          ),
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-bold text-primary underline underline-offset-2 decoration-primary/50 hover:decoration-primary"
+            >
+              {children}
+            </a>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-bold text-foreground">
+              {children}
+            </strong>
+          ),
+          em: ({ children }) => <em className="italic">{children}</em>,
+          ul: ({ children }) => (
+            <ul className="mb-2 last:mb-0 list-disc pl-5 space-y-1">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="mb-2 last:mb-0 list-decimal pl-5 space-y-1">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => <li className="leading-[1.5]">{children}</li>,
+          code: ({ children }) => (
+            <code className="rounded bg-foreground/10 px-1 py-0.5 text-[0.9em] font-mono">
+              {children}
+            </code>
+          ),
+        }}
+      >
+        {children}
+      </Markdown>
+    </div>
   );
 }
 

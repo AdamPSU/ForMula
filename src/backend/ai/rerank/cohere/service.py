@@ -28,6 +28,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from ai._timing import log_timing
 from ai.rerank.cohere.client import get_client
 from ai.rerank.cohere.log import log_call
 from ai.rerank.cohere.models import ScoredProduct
@@ -77,6 +78,12 @@ async def rerank(
     client = get_client()
     started = time.perf_counter()
 
+    # Per-attempt timing — when the wrapping `node=cohere_rerank` line
+    # blows up to 100s+, this is what tells us whether we paid for
+    # one slow API call or multiple silent retries on 429/5xx.
+    attempt_durations_ms: list[float] = []
+    attempt_outcomes: list[str] = []
+
     try:
         async for attempt in AsyncRetrying(
             stop=stop_after_attempt(3),
@@ -84,16 +91,43 @@ async def rerank(
             retry=retry_if_exception_type(_RETRIABLE),
             reraise=True,
         ):
-            with attempt:
-                response = await client.v2.rerank(
-                    model=_MODEL,
-                    query=cohere_query,
-                    documents=documents,
-                    top_n=min(top_k, len(documents)),
-                    max_tokens_per_doc=_MAX_TOKENS_PER_DOC,
+            attempt_started = time.perf_counter()
+            try:
+                with attempt:
+                    response = await client.v2.rerank(
+                        model=_MODEL,
+                        query=cohere_query,
+                        documents=documents,
+                        top_n=min(top_k, len(documents)),
+                        max_tokens_per_doc=_MAX_TOKENS_PER_DOC,
+                    )
+            except _RETRIABLE as exc:
+                attempt_durations_ms.append(
+                    round((time.perf_counter() - attempt_started) * 1000, 1)
                 )
+                attempt_outcomes.append(f"retriable:{type(exc).__name__}")
+                raise
+            except Exception as exc:
+                attempt_durations_ms.append(
+                    round((time.perf_counter() - attempt_started) * 1000, 1)
+                )
+                attempt_outcomes.append(f"fatal:{type(exc).__name__}")
+                raise
+            else:
+                attempt_durations_ms.append(
+                    round((time.perf_counter() - attempt_started) * 1000, 1)
+                )
+                attempt_outcomes.append("ok")
     except Exception as exc:
         elapsed_ms = (time.perf_counter() - started) * 1000
+        log_timing(
+            "cohere_api",
+            elapsed_ms=round(elapsed_ms, 1),
+            attempts=len(attempt_durations_ms),
+            attempt_durations_ms=attempt_durations_ms,
+            outcomes=attempt_outcomes,
+            error=f"{type(exc).__name__}: {exc}",
+        )
         log_call(
             query=cohere_query,
             candidate_count=len(candidate_ids),
@@ -105,6 +139,14 @@ async def rerank(
         raise
 
     elapsed_ms = (time.perf_counter() - started) * 1000
+    log_timing(
+        "cohere_api",
+        elapsed_ms=round(elapsed_ms, 1),
+        attempts=len(attempt_durations_ms),
+        attempt_durations_ms=attempt_durations_ms,
+        outcomes=attempt_outcomes,
+        docs_sent=len(documents),
+    )
     scored = [
         ScoredProduct(
             product_id=ordered_ids[result.index],

@@ -27,8 +27,7 @@ refresh loses the thread).
 
 from __future__ import annotations
 
-import json
-import uuid
+import time
 from typing import Any, Literal
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -37,16 +36,24 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import Command, interrupt
 
+from ai._timing import log_timing
 from ai._xai import get_xai_client
 from ai.chat.log import log_turn
 from ai.chat.prompt import build_messages
 from ai.chat.state import ChatContext, ChatMessage, ChatState
-from ai.chat.tools import tools_for_phase
+from ai.rerank.cohere.repository import fetch_rerank_docs
 from ai.rerank.graph import (
     RecommendContext,
     filter_graph,
     rerank_graph,
 )
+from profiles.models import HairProfile
+
+# Number of top-ranked products whose `rerank_doc` is hydrated into the
+# chat agent's system prompt — and the slice the frontend shortlist
+# renders. Keep these aligned: the agent should only be asked to reason
+# about products the user can actually see.
+_TOP_K_FOR_CHAT = 10
 
 _MODEL = "grok-4-1-fast-non-reasoning"
 
@@ -62,29 +69,30 @@ _LOW_COUNT_THRESHOLD = 30
 # ---------------------------------------------------------------------------
 
 
-async def _llm_call(
-    state: ChatState,
-    *,
-    tools: list[dict],
-) -> tuple[str, list[dict[str, Any]]]:
-    """Run one streaming chat completion. Returns (content, tool_calls)."""
+async def _llm_call(state: ChatState) -> tuple[str, dict[str, float]]:
+    """Run one streaming chat completion.
+
+    Returns the full assistant text plus a timing breakdown:
+    `prompt_build_ms` (in-process), `ttft_ms` (time to first content
+    token from the model — the user-perceived "did it start"), and
+    `stream_total_ms` (request through last token). The relay/conversing
+    LLM is by far the biggest user-facing latency, so we want the
+    breakdown printed at the call site.
+    """
     writer = get_stream_writer()
+    prompt_started = time.perf_counter()
     messages = build_messages(state)
+    prompt_build_ms = (time.perf_counter() - prompt_started) * 1000
 
-    kwargs: dict[str, Any] = {
-        "model": _MODEL,
-        "messages": messages,
-        "stream": True,
-    }
-    if tools:
-        kwargs["tools"] = tools
-        kwargs["tool_choice"] = "auto"
-
-    stream = await get_xai_client().chat.completions.create(**kwargs)
+    request_started = time.perf_counter()
+    stream = await get_xai_client().chat.completions.create(
+        model=_MODEL,
+        messages=messages,
+        stream=True,
+    )
 
     content_parts: list[str] = []
-    tool_calls_acc: dict[int, dict[str, Any]] = {}
-
+    ttft_ms: float | None = None
     async for chunk in stream:
         if not chunk.choices:
             continue
@@ -92,56 +100,24 @@ async def _llm_call(
         if delta is None:
             continue
         if delta.content:
+            if ttft_ms is None:
+                ttft_ms = (time.perf_counter() - request_started) * 1000
             content_parts.append(delta.content)
             writer({"type": "messages_delta", "content": delta.content})
-        if delta.tool_calls:
-            for tc in delta.tool_calls:
-                idx = tc.index
-                slot = tool_calls_acc.setdefault(
-                    idx,
-                    {
-                        "id": "",
-                        "type": "function",
-                        "function": {"name": "", "arguments": ""},
-                    },
-                )
-                if tc.id:
-                    slot["id"] = tc.id
-                if tc.function:
-                    if tc.function.name:
-                        slot["function"]["name"] += tc.function.name
-                    if tc.function.arguments:
-                        slot["function"]["arguments"] += tc.function.arguments
 
     full_content = "".join(content_parts)
-    tool_calls = [tool_calls_acc[i] for i in sorted(tool_calls_acc.keys())]
-
-    # Emit one tool_call event per completed call, with parsed args.
-    for tc in tool_calls:
-        try:
-            args = json.loads(tc["function"]["arguments"] or "{}")
-        except json.JSONDecodeError:
-            args = {"_raw": tc["function"]["arguments"]}
-        writer({
-            "type": "tool_call",
-            "id": tc["id"] or str(uuid.uuid4()),
-            "name": tc["function"]["name"],
-            "arguments": args,
-        })
-
     if full_content:
         writer({"type": "message_complete"})
+    stream_total_ms = (time.perf_counter() - request_started) * 1000
+    return full_content, {
+        "prompt_build_ms": prompt_build_ms,
+        "ttft_ms": ttft_ms or 0.0,
+        "stream_total_ms": stream_total_ms,
+    }
 
-    return full_content, tool_calls
 
-
-def _assistant_message(content: str, tool_calls: list[dict]) -> ChatMessage:
-    msg: ChatMessage = {"role": "assistant"}
-    if content:
-        msg["content"] = content
-    if tool_calls:
-        msg["tool_calls"] = tool_calls
-    return msg
+def _assistant_message(content: str) -> ChatMessage:
+    return {"role": "assistant", "content": content}
 
 
 # ---------------------------------------------------------------------------
@@ -149,9 +125,29 @@ def _assistant_message(content: str, tool_calls: list[dict]) -> ChatMessage:
 # ---------------------------------------------------------------------------
 
 
+_UUID_FIELDS = ("id", "brand_id")
+
+
+def _msgpack_safe_products(products: list[dict]) -> list[dict]:
+    """Stringify asyncpg-native UUID values so the chat checkpointer's
+    msgpack serializer doesn't warn (and won't drop neighboring fields
+    once strict mode lands). asyncpg returns its own UUID subclass for
+    uuid columns; LangGraph's msgpack serde flags it as unregistered."""
+    out: list[dict] = []
+    for p in products:
+        copy = dict(p)
+        for f in _UUID_FIELDS:
+            v = copy.get(f)
+            if v is not None:
+                copy[f] = str(v)
+        out.append(copy)
+    return out
+
+
 async def _run_filter(
     state: ChatState, runtime: Runtime[ChatContext]
 ) -> Command[Literal["route_after_filter", "__end__"]]:
+    started = time.perf_counter()
     sub = await filter_graph.ainvoke(
         {
             "user_text": state["user_text"],
@@ -160,17 +156,26 @@ async def _run_filter(
         },
         context=RecommendContext(pool=runtime.context.pool),
     )
+    elapsed_ms = (time.perf_counter() - started) * 1000
 
+    profile = sub.get("profile")
     update: dict[str, Any] = {
         "sql": sub.get("sql"),
         "params": sub.get("params") or [],
-        "products": sub.get("products") or [],
+        "products": _msgpack_safe_products(sub.get("products") or []),
         "surfaced_count": sub.get("surfaced_count", 0),
-        "profile": sub.get("profile"),
-        # Seed the conversation with the user's original query so the
-        # /results chat opens with their prompt as the first bubble.
-        "messages": [{"role": "user", "content": state["user_text"]}],
+        # Dump HairProfile to a plain dict — same msgpack hygiene as
+        # `cohere_scored` / `judgments`. Re-hydrated when handed to
+        # `rerank_graph` in `_run_rerank`.
+        "profile": profile.model_dump() if profile else None,
     }
+    log_timing(
+        "run_filter",
+        elapsed_ms=round(elapsed_ms, 1),
+        products_count=len(update["products"]),
+        has_profile=profile is not None,
+        final_error=bool(sub.get("final_error")),
+    )
 
     if sub.get("final_error"):
         # AST refusals + DB errors both surface as terminal final_error;
@@ -210,26 +215,78 @@ async def _route_after_filter(
 async def _run_rerank(
     state: ChatState, runtime: Runtime[ChatContext]
 ) -> Command[Literal["emit_relay", "__end__"]]:
+    node_started = time.perf_counter()
+    profile_dict = state.get("profile")
+    profile = HairProfile(**profile_dict) if profile_dict else None
+    rerank_started = time.perf_counter()
     sub = await rerank_graph.ainvoke(
         {
             "user_text": state["user_text"],
-            "profile": state["profile"],
+            "profile": profile,
             "products": state["products"],
         },
         context=RecommendContext(pool=runtime.context.pool),
     )
+    rerank_ms = (time.perf_counter() - rerank_started) * 1000
     if sub.get("final_error"):
+        log_timing(
+            "run_rerank",
+            elapsed_ms=round((time.perf_counter() - node_started) * 1000, 1),
+            rerank_graph_ms=round(rerank_ms, 1),
+            final_error=sub.get("final_error"),
+        )
         return Command(
             update={"final_error": sub["final_error"]}, goto=END
         )
-    cohere_scored = sub.get("cohere_scored") or []
-    judgments = sub.get("judgments") or []
+    # Dump Pydantic models to plain JSON-compatible dicts before they
+    # cross the chat checkpointer boundary. `mode="json"` stringifies
+    # UUID fields, so the msgpack serializer sees only native types.
+    raw_cohere = sub.get("cohere_scored") or []
+    raw_judgments = sub.get("judgments") or []
+    cohere_scored = [s.model_dump(mode="json") for s in raw_cohere]
+    judgments = [j.model_dump(mode="json") for j in raw_judgments]
+
+    # Hydrate rerank_doc for the top-K judged products so the agent has
+    # ingredient-level signal to reason about in chat (no per-turn DB
+    # hop). Skipped when nothing was judged; the prompt then falls back
+    # to the SQL-ordered listing.
+    #
+    # Keys are stringified UUIDs deliberately. `fetch_rerank_docs`
+    # returns asyncpg's UUID subclass, which LangGraph's msgpack
+    # checkpoint serializer cannot round-trip — and a single
+    # non-serializable field silently torpedoes neighboring booleans
+    # like `judged` / `reranked` in the same `Command.update`. Strings
+    # are msgpack-trivial, so the whole update lands cleanly.
+    top_docs: dict[str, str] = {}
+    top_docs_ms = 0.0
+    if raw_judgments:
+        top_docs_started = time.perf_counter()
+        # `fetch_rerank_docs` expects real UUIDs — pull them off the
+        # pre-dump Pydantic objects rather than parsing the stringified
+        # values back out.
+        top_ids = [j.product_id for j in raw_judgments[:_TOP_K_FOR_CHAT]]
+        async with runtime.context.pool.acquire() as conn:
+            raw_docs = await fetch_rerank_docs(conn, top_ids)
+        top_docs = {str(k): v for k, v in raw_docs.items()}
+        top_docs_ms = (time.perf_counter() - top_docs_started) * 1000
+
+    log_timing(
+        "run_rerank",
+        elapsed_ms=round((time.perf_counter() - node_started) * 1000, 1),
+        rerank_graph_ms=round(rerank_ms, 1),
+        top_docs_fetch_ms=round(top_docs_ms, 1),
+        cohere_count=len(cohere_scored),
+        judgments_count=len(judgments),
+        judged=bool(raw_judgments),
+    )
+
     return Command(
         update={
             "cohere_scored": cohere_scored,
             "judgments": judgments,
+            "top_docs": top_docs,
             "reranked": True,
-            "judged": bool(judgments),
+            "judged": bool(raw_judgments),
             "phase": "relay",
         },
         goto="emit_relay",
@@ -244,8 +301,14 @@ async def _run_rerank(
 async def _emit_relay(
     state: ChatState, runtime: Runtime[ChatContext]
 ) -> Command[Literal["wait"]]:
-    tools = tools_for_phase("relay")
-    content, tool_calls = await _llm_call(state, tools=tools)
+    content, timing = await _llm_call(state)
+    log_timing(
+        "emit_relay",
+        ttft_ms=round(timing["ttft_ms"], 1),
+        stream_total_ms=round(timing["stream_total_ms"], 1),
+        prompt_build_ms=round(timing["prompt_build_ms"], 1),
+        content_chars=len(content),
+    )
     log_turn(
         phase="relay",
         user_text=state.get("user_text"),
@@ -253,10 +316,9 @@ async def _emit_relay(
         surfaced_count=state.get("surfaced_count"),
         sent_messages=None,
         assistant_content=content,
-        tool_calls=tool_calls,
     )
     return Command(
-        update={"messages": [_assistant_message(content, tool_calls)]},
+        update={"messages": [_assistant_message(content)]},
         goto="wait",
     )
 
@@ -264,8 +326,14 @@ async def _emit_relay(
 async def _emit_chat_response(
     state: ChatState, runtime: Runtime[ChatContext]
 ) -> Command[Literal["wait"]]:
-    tools = tools_for_phase("conversing")
-    content, tool_calls = await _llm_call(state, tools=tools)
+    content, timing = await _llm_call(state)
+    log_timing(
+        "emit_chat_response",
+        ttft_ms=round(timing["ttft_ms"], 1),
+        stream_total_ms=round(timing["stream_total_ms"], 1),
+        prompt_build_ms=round(timing["prompt_build_ms"], 1),
+        content_chars=len(content),
+    )
     log_turn(
         phase="conversing",
         user_text=None,
@@ -273,10 +341,9 @@ async def _emit_chat_response(
         surfaced_count=state.get("surfaced_count"),
         sent_messages=None,
         assistant_content=content,
-        tool_calls=tool_calls,
     )
     return Command(
-        update={"messages": [_assistant_message(content, tool_calls)]},
+        update={"messages": [_assistant_message(content)]},
         goto="wait",
     )
 
@@ -307,7 +374,6 @@ async def _wait(
         surfaced_count=state.get("surfaced_count"),
         sent_messages=None,
         assistant_content=None,
-        tool_calls=None,
         resume_value=payload,
     )
 

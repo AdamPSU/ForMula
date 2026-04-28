@@ -16,14 +16,16 @@ import type { FilterProduct } from "@/lib/api/filter";
 // single one of the R tournaments. The sqrt stretches the upper range so top
 // contenders cluster in the 80s–90s without lying cross-query (transform is
 // monotonic and deterministic).
-function scoreNumber(p: FilterProduct): number | null {
+function scoreNumber(p: FilterProduct): number {
   if (typeof p.overall_score === "number") {
     return Math.round(Math.sqrt(p.overall_score) * 100);
   }
   if (typeof p.relevance_score === "number") {
     return Math.round(p.relevance_score * 100);
   }
-  return null;
+  throw new Error(
+    `shortlist row missing score: product ${p.id} has no overall_score or relevance_score`,
+  );
 }
 
 const DIGIT_FONT_SIZE = 13;
@@ -152,7 +154,7 @@ export function ResultShortlistRow({
           )}
         </div>
       </div>
-      {score !== null && <AnimatedScore end={score} />}
+      <AnimatedScore end={score} />
     </>
   );
 
@@ -180,20 +182,18 @@ export function ResultShortlistRow({
         )}
       </div>
 
-      {score !== null && (
-        <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#442c2d]/10">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${score}%` }}
-            transition={{
-              duration: 0.8,
-              delay: index * 0.08 + 0.2,
-              ease: [0.25, 0.1, 0.25, 1],
-            }}
-            className={`h-full rounded-full ${barColor}`}
-          />
-        </div>
-      )}
+      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#442c2d]/10">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${score}%` }}
+          transition={{
+            duration: 0.8,
+            delay: index * 0.08 + 0.2,
+            ease: [0.25, 0.1, 0.25, 1],
+          }}
+          className={`h-full rounded-full ${barColor}`}
+        />
+      </div>
     </motion.div>
   );
 }

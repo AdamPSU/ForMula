@@ -8,6 +8,8 @@ import BorderGlow from "@/components/ui/border-glow";
 import { CHAT_THREAD_KEY } from "@/lib/chat/types";
 import { useChatSession } from "@/lib/chat/use-chat-session";
 
+import { LoadingScreen } from "./loading-screen";
+
 export function PromptSection() {
   const router = useRouter();
   const { state, startFresh, send, reset } = useChatSession();
@@ -59,12 +61,21 @@ export function PromptSection() {
     startFresh(text, personalize);
   };
 
+  // Show the cream loader once the SQL gate has cleared (no warning / no error)
+  // and we're either reranking or about to relay → /results. This window
+  // covers the Cohere rerank latency and the navigation handoff.
+  const showTransition =
+    !state.error &&
+    (state.phase === "rerank_pending" || state.phase === "relay");
+
+  if (showTransition) return <LoadingScreen />;
+
   return (
     <>
       <div className="rise" style={{ animationDelay: "500ms" }}>
         <BorderGlow className="rounded-xl">
           <PromptInputBox
-            placeholder="What kind of hair are you working with?"
+            placeholder="what are you looking for?"
             personalize={personalize}
             onPersonalizeChange={setPersonalize}
             isLoading={isWorking}

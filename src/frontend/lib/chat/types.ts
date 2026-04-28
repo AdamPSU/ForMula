@@ -8,18 +8,10 @@ export type ChatEvent =
   | { type: "thread"; thread_id: string }
   | { type: "messages_delta"; content: string }
   | { type: "message_complete" }
-  | {
-      type: "tool_call";
-      id: string;
-      name: ChatToolName;
-      arguments: Record<string, unknown>;
-    }
   | { type: "phase"; phase: ChatPhase; surfaced_count?: number }
   | { type: "interrupt"; phase: ChatPhase }
   | { type: "final_error"; error: string }
   | { type: "done" };
-
-export type ChatToolName = "explain_product" | "start_quiz";
 
 export type ChatPhase =
   | "init"
@@ -30,20 +22,12 @@ export type ChatPhase =
   | "ended";
 
 // ---------------------------------------------------------------------------
-// Persisted message shape. Mirrors the OpenAI chat schema; tool_calls are
-// rendered as inline cards next to the assistant text.
+// Persisted message shape. Mirrors the OpenAI chat schema, prose only.
 // ---------------------------------------------------------------------------
 
-export type ToolCall = {
-  id: string;
-  name: ChatToolName;
-  arguments: Record<string, unknown>;
-};
-
 export type ChatMessage = {
-  role: "user" | "assistant" | "tool" | "system";
+  role: "user" | "assistant" | "system";
   content?: string;
-  tool_calls?: ToolCall[];
 };
 
 // ---------------------------------------------------------------------------
