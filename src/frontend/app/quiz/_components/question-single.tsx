@@ -21,7 +21,7 @@ export function QuestionSingle({ options, value, onChange }: Props) {
             type="button"
             onClick={() => onChange(opt.id)}
             className={cn(
-              "rounded-xl border px-4 py-2.5 text-left text-sm transition-colors",
+              "rounded-md border px-4 py-2.5 text-left text-sm transition-colors",
               "border-[#ddcbb6] bg-[#f5ebdf]/96 text-[#442c2d]",
               "hover:border-[#442c2d]/35 hover:bg-[#fbf4eb]",
               selected &&

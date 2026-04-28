@@ -2,7 +2,9 @@
 
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { ArrowUp, BrainCog, Droplets, Filter, Mic, Square, StopCircle } from "lucide-react";
+import { ArrowUp, BrainCog, Droplets, Filter, Mic, StopCircle } from "lucide-react";
+
+import ClassicLoader from "@/components/ui/loader";
 import { motion, AnimatePresence } from "framer-motion";
 
 const cn = (...classes: (string | undefined | null | false)[]) =>
@@ -59,7 +61,7 @@ const TooltipContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
-      "z-50 overflow-hidden rounded-lg border border-[#e1d1be] bg-[#fbf4eb] px-2.5 py-1 text-xs text-[#442c2d] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.45)]",
+      "z-50 overflow-hidden rounded border border-[#e1d1be] bg-[#fbf4eb] px-2.5 py-1 text-xs text-[#442c2d] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.45)]",
       "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1",
       className,
     )}
@@ -247,7 +249,7 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
           <div
             ref={ref}
             className={cn(
-              "group rounded-3xl border border-[#e1cfbb] bg-[#f5ebdf]/97 p-2 transition-colors duration-200",
+              "group rounded-xl border border-[#e1cfbb] bg-[#f5ebdf]/97 p-2 transition-colors duration-200",
               "shadow-[0_22px_50px_-22px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,248,239,0.75)]",
               "focus-within:border-[#442c2d]/35 focus-within:bg-[#fbf4eb]",
               isLoading && "border-red-400/60",
@@ -371,6 +373,13 @@ interface PromptInputBoxProps {
   /** Controlled "use my hair profile" toggle. Defaults to true. */
   personalize?: boolean;
   onPersonalizeChange?: (next: boolean) => void;
+  /** Controlled value for the textarea. */
+  value?: string;
+  onValueChange?: (next: string) => void;
+  /** Optional inline notice rendered to the left of the submit button.
+   * Used by the home page to surface the low-count gate without a
+   * separate UI component. */
+  notice?: React.ReactNode;
 }
 export const PromptInputBox = React.forwardRef(
   (props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
@@ -381,8 +390,13 @@ export const PromptInputBox = React.forwardRef(
       className,
       personalize = true,
       onPersonalizeChange,
+      value,
+      onValueChange,
+      notice,
     } = props;
-    const [input, setInput] = React.useState("");
+    const [internalInput, setInternalInput] = React.useState("");
+    const input = value ?? internalInput;
+    const setInput = onValueChange ?? setInternalInput;
     const [isRecording, setIsRecording] = React.useState(false);
     const [showThink, setShowThink] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
@@ -401,7 +415,10 @@ export const PromptInputBox = React.forwardRef(
       if (!input.trim()) return;
       const formatted = showThink ? `[Think: ${input}]` : input;
       onSend(formatted);
-      setInput("");
+      // Keep the input populated after submit so the user can read /
+      // edit the query while the warning gate is up. The PromptSection
+      // unmounts on navigation, so persistence beyond that point is
+      // moot.
     };
 
     const handleStartRecording = () => {};
@@ -475,7 +492,7 @@ export const PromptInputBox = React.forwardRef(
                 aria-pressed={personalize}
                 onClick={() => onPersonalizeChange?.(!personalize)}
                 className={cn(
-                  "flex h-[50px] items-center gap-[9px] rounded-full border px-[15px] transition-colors",
+                  "flex h-[50px] items-center gap-[9px] rounded-xl border px-[15px] transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40",
                   personalize
                     ? "border-transparent bg-[#e7d2b8] text-[#442c2d]"
@@ -518,7 +535,7 @@ export const PromptInputBox = React.forwardRef(
                 aria-pressed={showFilter}
                 onClick={() => setShowFilter((prev) => !prev)}
                 className={cn(
-                  "flex h-[50px] items-center gap-[9px] rounded-full border px-[15px] transition-colors",
+                  "flex h-[50px] items-center gap-[9px] rounded-xl border px-[15px] transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40",
                   showFilter
                     ? "border-transparent bg-[#e7d2b8] text-[#442c2d]"
@@ -563,7 +580,7 @@ export const PromptInputBox = React.forwardRef(
                 aria-pressed={showThink}
                 onClick={() => setShowThink((prev) => !prev)}
                 className={cn(
-                  "flex h-[50px] items-center gap-[9px] rounded-full border px-[15px] transition-colors",
+                  "flex h-[50px] items-center gap-[9px] rounded-xl border px-[15px] transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#442c2d]/40",
                   showThink
                     ? "border-transparent bg-[#e7d2b8] text-[#442c2d]"
@@ -601,7 +618,17 @@ export const PromptInputBox = React.forwardRef(
             </div>
           </div>
 
-          <PromptInputAction tooltip={submitTooltip}>
+          <div className="flex items-center gap-3">
+            {notice && (
+              <span
+                role="status"
+                aria-live="polite"
+                className="font-archivo text-[13px] tracking-[0.01em] text-[#442c2d]/80 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200"
+              >
+                {notice}
+              </span>
+            )}
+            <PromptInputAction tooltip={submitTooltip}>
             <Button
               variant="default"
               size="icon"
@@ -622,10 +649,7 @@ export const PromptInputBox = React.forwardRef(
               disabled={isLoading && !hasContent}
             >
               {isLoading ? (
-                <Square
-                  aria-hidden="true"
-                  className="h-[24px] w-[24px] animate-pulse fill-[#fff9f0] motion-reduce:animate-none"
-                />
+                <ClassicLoader className="!h-[24px] !w-[24px] !border-2 !border-current !border-t-transparent" />
               ) : isRecording ? (
                 <StopCircle aria-hidden="true" className="h-[27px] w-[27px]" />
               ) : hasContent ? (
@@ -635,6 +659,7 @@ export const PromptInputBox = React.forwardRef(
               )}
             </Button>
           </PromptInputAction>
+          </div>
         </PromptInputActions>
       </PromptInput>
     );

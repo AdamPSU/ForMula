@@ -4,40 +4,22 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ResultsView } from "@/app/_components/results-view";
-import { RESULTS_STORAGE_KEY, type StoredResult } from "@/lib/api/filter";
-
-function loadStored(): StoredResult | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.sessionStorage.getItem(RESULTS_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as StoredResult;
-  } catch {
-    return null;
-  }
-}
+import { CHAT_THREAD_KEY } from "@/lib/chat/types";
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [data, setData] = useState<StoredResult | null>(() => loadStored());
+  // Start at null on both server and client so the initial markup matches.
+  // The client-only effect below reads sessionStorage and either populates
+  // the threadId or kicks the user back to /.
+  const [threadId, setThreadId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!data) {
-      router.replace("/");
-    }
-  }, [data, router]);
+    const id = window.sessionStorage.getItem(CHAT_THREAD_KEY);
+    if (!id) router.replace("/");
+    else setThreadId(id);
+  }, [router]);
 
-  if (!data) return null;
+  if (!threadId) return null;
 
-  return (
-    <ResultsView
-      result={data.result}
-      query={data.query}
-      onReset={() => {
-        window.sessionStorage.removeItem(RESULTS_STORAGE_KEY);
-        setData(null);
-        router.push("/");
-      }}
-    />
-  );
+  return <ResultsView threadId={threadId} />;
 }

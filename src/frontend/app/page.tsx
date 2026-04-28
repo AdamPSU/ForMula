@@ -24,13 +24,11 @@ export default function Home() {
       />
 
       <section
-        className="relative z-10 mx-auto flex min-h-screen max-w-[2160px] flex-col px-6 pt-8 pb-10 md:px-12 md:pt-10 md:pb-14 lg:px-20"
-        style={{
-          paddingLeft: "max(1.5rem, env(safe-area-inset-left))",
-          paddingRight: "max(1.5rem, env(safe-area-inset-right))",
-          paddingTop: "max(2rem, env(safe-area-inset-top))",
-          paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
-        }}
+        className="relative z-10 mx-auto flex min-h-screen max-w-[2160px] flex-col
+          pl-[max(1.5rem,env(safe-area-inset-left))]
+          pr-[max(1.5rem,env(safe-area-inset-right))]
+          pt-[max(2rem,env(safe-area-inset-top))]
+          pb-[max(2.5rem,env(safe-area-inset-bottom))]"
       >
         <SidebarNav />
 
@@ -50,7 +48,7 @@ export default function Home() {
               Tell us what your hair is like. We&rsquo;ll match you to brands that actually fit&nbsp;&mdash; ingredient-first, no marketing gloss.
             </p>
 
-            <div className="rise mt-8 md:mt-10" style={{ animationDelay: "500ms" }}>
+            <div className="mt-8 md:mt-10">
               <PromptSection />
             </div>
           </div>

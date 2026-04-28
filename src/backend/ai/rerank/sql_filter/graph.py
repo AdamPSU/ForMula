@@ -39,7 +39,7 @@ class FilterState(TypedDict, total=False):
     attempt: int
     sql: str | None
     params: list[Any] | None
-    rows: list | None
+    rows: list[dict] | None
     error: str | None        # transient between write/validate/execute
     final_error: str | None  # set only when MAX_ATTEMPTS exhausted
 
@@ -89,7 +89,10 @@ async def _execute(
         if state.get("attempt", 0) >= MAX_ATTEMPTS:
             return Command(update={"final_error": msg}, goto=END)
         return Command(update={"error": msg}, goto="write")
-    return Command(update={"rows": rows}, goto=END)
+    # Convert asyncpg.Record → dict at the source. Records aren't
+    # msgpack-serializable, so leaving them in state breaks the moment
+    # this subgraph is invoked under a parent that has a checkpointer.
+    return Command(update={"rows": [dict(r) for r in rows]}, goto=END)
 
 
 graph = (

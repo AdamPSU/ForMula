@@ -1,12 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
 
-export const RESULTS_STORAGE_KEY = "formula:last-result";
-
-export type StoredResult = {
-  query: string;
-  result: FilterResponse;
-};
-
 export type FilterProduct = {
   id: string;
   name?: string | null;
@@ -17,6 +10,7 @@ export type FilterProduct = {
   currency?: string | null;
   url?: string | null;
   brand_id?: string | null;
+  brand_name?: string | null;
   relevance_score?: number;
   rank?: number;
   // Judge stage (present when response.judged === true)

@@ -522,3 +522,227 @@ top_results:
   76f66218-18b0-4c80-8fe8-af624d4df50b 0.9283
   97038372-4914-46d9-9325-d965ee8fba34 0.9270
 
+--- 2026-04-27T14:04:50+00:00 ---
+query:
+User query: i want a leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 1124.9
+top_results:
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9532
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9465
+  97038372-4914-46d9-9325-d965ee8fba34 0.9451
+  90c986dc-a364-4874-b776-92d38ef218bb 0.9447
+  4d410476-d7f2-440c-afef-3f7658538306 0.9445
+  2280dec4-8420-4565-9cb8-fd86c02ec4b2 0.9439
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9437
+  9314208c-8706-4aae-88e8-815b1842ae9b 0.9435
+  c49b9cd6-852e-4297-983c-e04984699e4c 0.9435
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9433
+
+--- 2026-04-27T15:49:03+00:00 ---
+query:
+User query: i want a leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 918.0
+top_results:
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9532
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9465
+  97038372-4914-46d9-9325-d965ee8fba34 0.9451
+  90c986dc-a364-4874-b776-92d38ef218bb 0.9447
+  4d410476-d7f2-440c-afef-3f7658538306 0.9445
+  2280dec4-8420-4565-9cb8-fd86c02ec4b2 0.9439
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9437
+  9314208c-8706-4aae-88e8-815b1842ae9b 0.9435
+  c49b9cd6-852e-4297-983c-e04984699e4c 0.9435
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9433
+
+--- 2026-04-27T16:27:37+00:00 ---
+query:
+User query: i'm looking for a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 2204.1
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9632
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9525
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9521
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9514
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9511
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9500
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9485
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9481
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9481
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9481
+
+--- 2026-04-27T18:54:42+00:00 ---
+query:
+User query: i want a leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 1021.5
+top_results:
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9532
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9465
+  97038372-4914-46d9-9325-d965ee8fba34 0.9451
+  90c986dc-a364-4874-b776-92d38ef218bb 0.9447
+  4d410476-d7f2-440c-afef-3f7658538306 0.9445
+  2280dec4-8420-4565-9cb8-fd86c02ec4b2 0.9439
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9437
+  9314208c-8706-4aae-88e8-815b1842ae9b 0.9435
+  c49b9cd6-852e-4297-983c-e04984699e4c 0.9435
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9433
+
+--- 2026-04-27T19:19:41+00:00 ---
+query:
+User query: i want a good conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1614
+docs_sent: 1614
+elapsed_ms: 1750.2
+top_results:
+  d80abf6e-8396-4531-8747-508813994180 0.9536
+  0f85b8f0-4421-4738-860d-44a4d441a848 0.9507
+  b0450fb0-fca9-4ebf-9569-b6758a0f6d30 0.9465
+  2280dec4-8420-4565-9cb8-fd86c02ec4b2 0.9451
+  3ec312f2-2409-4c60-83b6-d435dfb6da13 0.9451
+  8afe066d-8d43-4834-9d0c-4cb714e3c61f 0.9443
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9426
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9418
+  2883e990-a4ab-4dc4-a747-f823f02cadb1 0.9414
+  47caeef5-1967-4675-9b7d-6f4829c38bf8 0.9409
+
+--- 2026-04-27T19:31:38+00:00 ---
+query:
+User query: i want a good leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 812.3
+top_results:
+  4d410476-d7f2-440c-afef-3f7658538306 0.9485
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9469
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9465
+  2280dec4-8420-4565-9cb8-fd86c02ec4b2 0.9465
+  90c986dc-a364-4874-b776-92d38ef218bb 0.9453
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9441
+  97038372-4914-46d9-9325-d965ee8fba34 0.9441
+  8cfb32cd-638b-4bb8-9a44-2819d76dd1f2 0.9431
+  df834726-cf7e-48ad-9bfd-cd6438baa6f7 0.9422
+  b1bb4ba3-cbee-42d4-9c63-92cfc812ef89 0.9407
+
+--- 2026-04-27T19:34:16+00:00 ---
+query:
+User query: i want a good shampoo
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 1171
+docs_sent: 1171
+elapsed_ms: 1833.1
+top_results:
+  222b59f0-ee4c-4c61-bae8-4da5513aedd8 0.9621
+  25c0f5b0-c42c-4c1e-8a7a-4d5399bbbb61 0.9503
+  e93e50e0-e587-4ea4-bdb3-33e5ae6526ce 0.9488
+  7a9baed3-f133-4c56-a56d-e0e689fccc49 0.9488
+  f49b5be7-4e89-409e-9454-7ea70e3c9300 0.9477
+  792520c8-3efb-44b6-a7c9-e8d724641681 0.9465
+  b993eb6b-c5c7-4525-b4fc-4b6d63d6bbcc 0.9461
+  d0ffdb54-a67d-4cb5-8e96-a0ad2669f534 0.9453
+  54b54a1d-6aac-4c7b-bdcb-72800232c44f 0.9449
+  07419ed0-fa2b-4b8e-abf2-45c62da7e39a 0.9420
+
+--- 2026-04-27T20:29:10+00:00 ---
+query:
+User query: leave-in conditioner
+
+Hair type: curly
+Scalp: balanced
+Density: medium
+Strand thickness: medium
+Concerns: frizz, dryness, dullness
+Goals: definition
+Porosity: medium
+Routine: 2_3_days
+Climate: humid
+candidates_in: 359
+docs_sent: 359
+elapsed_ms: 878.6
+top_results:
+  ae58bbb2-09ff-4657-91dd-eccd828861d1 0.9603
+  97038372-4914-46d9-9325-d965ee8fba34 0.9525
+  90c986dc-a364-4874-b776-92d38ef218bb 0.9525
+  76f66218-18b0-4c80-8fe8-af624d4df50b 0.9514
+  14476b0b-1bc5-4684-816c-bcb955ef7b34 0.9507
+  04e3a4e5-4336-4c34-b550-d11f68ede0dd 0.9503
+  9314208c-8706-4aae-88e8-815b1842ae9b 0.9500
+  c49b9cd6-852e-4297-983c-e04984699e4c 0.9492
+  a2db305d-5fb3-422f-b103-67482de2a70a 0.9485
+  98d045f0-8602-4045-8566-68965c556c55 0.9481
+

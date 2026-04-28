@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # from src/backend/main.py. Loaded before any module reads os.environ.
 load_dotenv(Path(__file__).resolve().parents[2] / ".env.local")
 
+from ai.chat import router as chat_router  # noqa: E402
 from ai.rerank.api import router as recommend_router  # noqa: E402
 from profiles.api import router as profiles_router  # noqa: E402
 
@@ -37,6 +38,7 @@ app.add_middleware(
 
 app.include_router(profiles_router)
 app.include_router(recommend_router)
+app.include_router(chat_router)
 
 
 @app.get("/")

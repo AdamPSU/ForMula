@@ -4,6 +4,41 @@
 @theme inline {
   --font-archivo: var(--font-archivo);
   --font-clash: var(--font-clash);
+
+  /* Shadcn/AI-Elements palette mapped to our cream + brown tokens.
+     Imported chat primitives (Message, Actions, Button, Tooltip) use these
+     utility classes (bg-primary, text-foreground, etc.) and inherit our
+     visual style without per-component overrides. */
+  --color-primary: #442c2d;
+  --color-primary-foreground: #fff9f0;
+  --color-secondary: #e7d2b8;
+  --color-secondary-foreground: #442c2d;
+  --color-foreground: #442c2d;
+  --color-muted: #ebd8c0;
+  --color-muted-foreground: rgba(68, 44, 45, 0.65);
+  --color-accent: rgba(68, 44, 45, 0.06);
+  --color-accent-foreground: #442c2d;
+  --color-border: rgba(68, 44, 45, 0.12);
+  --color-input: rgba(68, 44, 45, 0.15);
+  --color-ring: rgba(68, 44, 45, 0.4);
+  --color-popover: #fbf4eb;
+  --color-popover-foreground: #442c2d;
+  --color-destructive: #7a1a1a;
+  --color-destructive-foreground: #fff9f0;
+
+  --animate-shine: shine var(--duration) infinite linear;
+
+  @keyframes shine {
+    0% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
+    100% {
+      background-position: 0% 0%;
+    }
+  }
 }
 
 :root {
@@ -56,4 +91,39 @@ html {
 ::selection {
   background: rgb(255 255 255 / 0.2);
   color: #ffffff;
+}
+
+/* Always-visible cream scrollbar for shortlist / chat tool surfaces.
+   macOS auto-hides overlay scrollbars; styling ::-webkit-scrollbar
+   forces "classic" non-overlay rendering, and the explicit thumb bg
+   keeps it visible at idle (not just during scroll). */
+.scrollbar-cream {
+  scrollbar-color: rgba(68, 44, 45, 0.4) rgba(68, 44, 45, 0.1);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.scrollbar-cream::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  -webkit-appearance: none;
+  background-color: rgba(68, 44, 45, 0.1);
+}
+.scrollbar-cream::-webkit-scrollbar-track {
+  background-color: rgba(68, 44, 45, 0.1);
+  border-radius: 9999px;
+}
+.scrollbar-cream::-webkit-scrollbar-thumb {
+  background-color: rgba(68, 44, 45, 0.45);
+  border-radius: 9999px;
+  min-height: 24px;
+  /* 2px transparent border carves the thumb away from the track edges
+     so it visually sits inside the rounded gutter. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.scrollbar-cream::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(68, 44, 45, 0.65);
+}
+.scrollbar-cream::-webkit-scrollbar-corner {
+  background-color: transparent;
 }

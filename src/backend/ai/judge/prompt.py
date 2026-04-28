@@ -21,21 +21,16 @@ Two facets matter for accuracy:
 
 from __future__ import annotations
 
+from ai._persona import COSMETIC_CHEMIST_IDENTITY, INCI_DISCIPLINE
 from profiles.models import HairProfile
 
 _SYSTEM_PROMPT = (
-    "You are a senior cosmetic chemist helping a specific user pick "
-    "haircare products that fit their hair. You will see the user's "
-    "request, their hair profile, and a numbered set of candidate "
-    "products represented by their INCI ingredient list and structured "
-    "facets. Your job is to SELECT the best-fitting m products for "
-    "this user.\n"
+    f"{COSMETIC_CHEMIST_IDENTITY} You will see the user's request, their "
+    "hair profile, and a numbered set of candidate products represented "
+    "by their INCI ingredient list and structured facets. Your job is to "
+    "SELECT the best-fitting m products for this user.\n"
     "\n"
-    "Judge by ingredient fit to the user's hair profile and request — "
-    "never by brand, name, or marketing language (which has been "
-    "withheld). Be ruthless: many products are plausible; pick the "
-    "ones whose formulation actually matches this user. Do not "
-    "speculate about brand identity from the INCI fingerprint.\n"
+    f"{INCI_DISCIPLINE}\n"
     "\n"
     "Output a single JSON object with key `selected` containing the m "
     "chosen document numbers in descending order of fit. Example for "

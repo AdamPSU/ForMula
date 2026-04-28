@@ -177,7 +177,7 @@ export function QuizFlow({ quiz }: { quiz: Quiz }) {
           onClick={back}
           disabled={clampedStep === 0 || pending}
           className={cn(
-            "flex items-center gap-1.5 rounded-full border border-[#ddcbb6] bg-[#f5ebdf]/96 px-4 py-2 text-xs text-[#442c2d] transition-colors",
+            "flex items-center gap-1.5 rounded-xl border border-[#ddcbb6] bg-[#f5ebdf]/96 px-4 py-2 text-xs text-[#442c2d] transition-colors",
             "hover:border-[#442c2d]/35 hover:bg-[#fbf4eb]",
             "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#ddcbb6] disabled:hover:bg-[#f5ebdf]/96",
           )}
@@ -192,7 +192,7 @@ export function QuizFlow({ quiz }: { quiz: Quiz }) {
             onClick={next}
             disabled={!advanceOk || pending}
             className={cn(
-              "flex items-center gap-1.5 rounded-full bg-[#f5ebdf] px-5 py-2 text-xs font-medium text-[#442c2d] transition-colors",
+              "flex items-center gap-1.5 rounded-xl bg-[#f5ebdf] px-5 py-2 text-xs font-medium text-[#442c2d] transition-colors",
               "hover:bg-[#fff6ed]",
               "disabled:cursor-not-allowed disabled:opacity-40",
             )}

@@ -21,7 +21,7 @@ export function QuestionImage({ options, value, onChange }: Props) {
             type="button"
             onClick={() => onChange(opt.id)}
             className={cn(
-              "group relative flex flex-col overflow-hidden rounded-xl border bg-[#f5ebdf]/96 transition-colors",
+              "group relative flex flex-col overflow-hidden rounded-md border bg-[#f5ebdf]/96 transition-colors",
               "border-[#ddcbb6] hover:border-[#442c2d]/35",
               selected && "border-[#442c2d] ring-2 ring-[#e7d2b8]/80",
             )}
