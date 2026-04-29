@@ -107,3 +107,53 @@ HAIR_LAWS = (
     "ingredients that contradict the claim for THIS user. This "
     "verification is the core of your job."
 )
+
+# Pruned subset of HAIR_LAWS — ~7 highest-leverage laws that fire for the
+# bulk of users. Used in non-think mode where the latency budget is tight
+# (every selection call carries the persona prefix, so a smaller persona
+# is the highest-leverage cut). Think mode keeps the full HAIR_LAWS so
+# niche concerns (dandruff, sensitive scalp, sits-on-low-porosity, etc.)
+# still get judged correctly when the user opts into the slow path.
+HAIR_LAWS_LITE = (
+    "=== HAIR LAWS (peer-reviewed, schema-aligned) ===\n"
+    "INCI is descending concentration; the first 5-7 ingredients "
+    "dominate the formulation. Apply these laws against the early INCI "
+    "positions, not the tail.\n"
+    "\n"
+    "1. Anionic surfactants (sulfates: SLS, SLES, ammonium lauryl "
+    "sulfate; also sulfosuccinates) strip sebum aggressively. Penalize "
+    "for scalp_condition in {sensitive, dry, balanced} or low "
+    "wash_frequency; tolerate for oily/flaky scalp.\n"
+    "2. Heavy butters and plant oils (shea, mango, cupuacu, hemp, "
+    "castor, etc.) high in INCI weigh down fine and low-density hair. "
+    "Penalize when strand_thickness=fine or density=thin.\n"
+    "3. Glycerin and other humectants behave inversely to climate. In "
+    "humid climate, they pull atmospheric moisture into the shaft and "
+    "trigger frizz — penalize when concerns include frizz. In dry "
+    "climate, they draw moisture FROM the shaft — penalize for "
+    "dryness concern.\n"
+    "4. Curly / coily geometry impedes sebum migration from scalp to "
+    "ends, so curl_pattern in {curly, coily} runs drier mid-length and "
+    "tip. Reward early-INCI emollients for these users; do not "
+    "penalize them for the same emollients you'd flag on fine straight "
+    "hair.\n"
+    "5. Drying alcohols high in INCI (alcohol denat, SD alcohol, "
+    "isopropyl alcohol, ethanol) strip oils. Penalize for dryness or "
+    "sensitive scalp. Cetyl / stearyl / cetearyl alcohol are fatty "
+    "alcohols, NOT drying — they're emollients.\n"
+    "6. Cationic conditioners (quaternary ammonium compounds — "
+    "polyquaterniums, behentrimonium chloride, cetrimonium chloride) "
+    "preferentially bind anionic / damaged hair. Reward for "
+    "chemical_treatment != none and for breakage / dryness concerns.\n"
+    "7. Film-forming polymers (polyquaterniums, PVP, VA copolymers, "
+    "VP/acrylates) create a hydrophobic barrier that blocks "
+    "humidity-induced hygroscopic swelling. Reward for climate=humid + "
+    "frizz concern, and for heat_tool_frequency >= weekly (same "
+    "polymers preserve protein structure under heat).\n"
+    "\n"
+    "CLAIM vs INCI: a product's category, subcategory, and listed hair "
+    "types describe formulation INTENT. Verify the INCI actually "
+    "delivers — products tagged 'for curly hair' often contain "
+    "ingredients that contradict the claim for THIS user. This "
+    "verification is the core of your job."
+)

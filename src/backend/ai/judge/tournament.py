@@ -41,7 +41,7 @@ from ai.judge.log import _LlmUsage
 from ai.judge.prompt import build_selection_prompt
 from ai.judge.schema import Selection
 
-MODEL_DEFAULT = "grok-4.20-0309-non-reasoning"
+MODEL_DEFAULT = "grok-4-1-fast-non-reasoning"
 # Reasoning variant. In think mode it runs only on endgame stages —
 # the schedule entries with g == 1, where the cascade has converged
 # to a single group and the actual ordering is decided. Head stages
@@ -49,7 +49,7 @@ MODEL_DEFAULT = "grok-4.20-0309-non-reasoning"
 # bench, full-cascade reasoning was ~10x slower than non-reasoning.
 # `service.py::_stage_models` owns the policy; this module just
 # consumes the per-stage tuple it builds.
-MODEL_REASONING = "grok-4.20-0309-reasoning"
+MODEL_REASONING = "grok-4-1-fast-reasoning"
 
 if TYPE_CHECKING:
     from ai.judge.log import _RunAccumulator
@@ -75,11 +75,11 @@ _BUCKETS: dict[int, tuple[tuple[int, int, int], ...]] = {
     20:  ((1, 20, 10), (1, 10, 5), (1, 5, 2)),
     # 1-stage head + endgame.
     40:  ((2, 20, 10), (1, 20, 10), (1, 10, 5), (1, 5, 2)),
-    50:  ((5, 10, 4),  (1, 20, 10), (1, 10, 5), (1, 5, 2)),
+    50:  ((5, 10, 4),  (1, 20, 5),  (1, 5, 2)),
     80:  ((4, 20, 5),  (1, 20, 10), (1, 10, 5), (1, 5, 2)),
     # 2-stage head + endgame (K=5).
     100: ((5, 20, 10), (1, 50, 10), (1, 10, 5), (1, 5, 2)),
-    160: ((8, 20, 5),  (1, 40, 10), (1, 10, 5), (1, 5, 2)),
+    160: ((8, 20, 5),  (1, 40, 10), (1, 10, 2)),
     200: ((10, 20, 5), (5, 10, 4),  (1, 20, 10), (1, 10, 5), (1, 5, 2)),
     320: ((16, 20, 5), (4, 20, 5),  (1, 20, 10), (1, 10, 5), (1, 5, 2)),
 }
@@ -261,6 +261,7 @@ async def select_top_m(
     tournament_seed: int,
     stage_index: int,
     conv_id: str,
+    thinking: bool,
 ) -> list[Doc]:
     """Run one selection call for one group. Returns m surviving Docs.
 
@@ -277,6 +278,7 @@ async def select_top_m(
     labeled = [(i + 1, d.rerank_doc) for i, d in enumerate(group_docs)]
     system, user = build_selection_prompt(
         query=query, profile=profile, group_docs=labeled, m=m,
+        thinking=thinking,
     )
 
     last_error: str | None = None
@@ -409,6 +411,7 @@ async def one_tournament(
     semaphore: asyncio.Semaphore,
     accumulator: _RunAccumulator,
     conv_id: str,
+    thinking: bool,
 ) -> dict[UUID, int]:
     """Walk the selection cascade once. Returns per-doc points (0..stages).
 
@@ -433,6 +436,7 @@ async def one_tournament(
                 max_attempts=max_attempts, semaphore=semaphore,
                 accumulator=accumulator, tournament_seed=seed,
                 stage_index=stage_index, conv_id=conv_id,
+                thinking=thinking,
             )
             for group in groups
         ])
@@ -455,6 +459,7 @@ async def run_tournaments(
     semaphore: asyncio.Semaphore,
     accumulator: _RunAccumulator,
     conv_id: str,
+    thinking: bool,
 ) -> dict[UUID, int]:
     """Run R tournaments in parallel and sum points across them.
 
@@ -468,6 +473,7 @@ async def run_tournaments(
             schedule=schedule, seed=r, models=models,
             max_attempts=max_attempts, semaphore=semaphore,
             accumulator=accumulator, conv_id=conv_id,
+            thinking=thinking,
         )
         for r in range(R)
     ])

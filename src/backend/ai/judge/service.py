@@ -229,6 +229,7 @@ async def score_many(
         max_attempts=max_attempts_per_call,
         semaphore=semaphore, accumulator=accumulator,
         conv_id=conv_id,
+        thinking=thinking,
     )
 
     max_possible = len(schedule) * R

@@ -31,34 +31,44 @@ from __future__ import annotations
 from ai._persona import (
     COSMETIC_CHEMIST_IDENTITY,
     HAIR_LAWS,
+    HAIR_LAWS_LITE,
     INCI_DISCIPLINE,
 )
 from profiles.models import HairProfile
 
-_SYSTEM_PROMPT = (
-    f"{COSMETIC_CHEMIST_IDENTITY} You will see the user's request, their "
-    "hair profile, and a numbered set of candidate products represented "
-    "by their INCI ingredient list and structured facets. Your job is to "
-    "SELECT the best-fitting m products for this user.\n"
-    "\n"
-    f"{INCI_DISCIPLINE}\n"
-    "\n"
-    f"{HAIR_LAWS}\n"
-    "\n"
-    "=== HOW TO ANSWER ===\n"
-    "Produce a single JSON object with two fields, in this order: "
-    "`notes`, `selected`.\n"
-    "\n"
-    "  1. `notes` — work through the candidates against the laws and "
-    "the user's profile. Surface the ingredient signals that fit or "
-    "disqualify each contender. This is your reasoning before you "
-    "commit; do not rank yet.\n"
-    "  2. `selected` — your top-m, descending fit order.\n"
-    "\n"
-    "Only `selected` is read by the downstream system. `notes` exists "
-    "so you reason before committing — per-field specifics are in the "
-    "response schema."
-)
+
+def _build_system_prompt(laws: str) -> str:
+    return (
+        f"{COSMETIC_CHEMIST_IDENTITY} You will see the user's request, their "
+        "hair profile, and a numbered set of candidate products represented "
+        "by their INCI ingredient list and structured facets. Your job is to "
+        "SELECT the best-fitting m products for this user.\n"
+        "\n"
+        f"{INCI_DISCIPLINE}\n"
+        "\n"
+        f"{laws}\n"
+        "\n"
+        "=== HOW TO ANSWER ===\n"
+        "Produce a single JSON object with two fields, in this order: "
+        "`notes`, `selected`.\n"
+        "\n"
+        "  1. `notes` — work through the candidates against the laws and "
+        "the user's profile. Surface the ingredient signals that fit or "
+        "disqualify each contender. This is your reasoning before you "
+        "commit; do not rank yet.\n"
+        "  2. `selected` — your top-m, descending fit order.\n"
+        "\n"
+        "Only `selected` is read by the downstream system. `notes` exists "
+        "so you reason before committing — per-field specifics are in the "
+        "response schema."
+    )
+
+
+# Built once at import. Non-think mode pays a smaller persona prefix on
+# every selection call; think mode carries the full law set since users
+# opting in are paying for higher-quality judgment anyway.
+_SYSTEM_PROMPT_FULL = _build_system_prompt(HAIR_LAWS)
+_SYSTEM_PROMPT_LITE = _build_system_prompt(HAIR_LAWS_LITE)
 
 
 def strip_description(rerank_doc: str) -> str:
@@ -126,6 +136,7 @@ def build_selection_prompt(
     profile: HairProfile,
     group_docs: list[tuple[int, str]],
     m: int,
+    thinking: bool,
 ) -> tuple[str, str]:
     """Compose (system, user) for one selection call.
 
@@ -134,6 +145,12 @@ def build_selection_prompt(
     `Document N` labels per call; the caller maps each label back to a
     product UUID after parsing). Docs are expected pre-stripped of
     their `Description:` line — see `service.py::_fetch_rerank_docs`.
+
+    `thinking=False` swaps the persona to the pruned `HAIR_LAWS_LITE`
+    variant — about a third the token weight of the full law set —
+    cutting per-call latency on the hot default path. Think mode keeps
+    the full law set because users opting in are paying for the slow,
+    higher-quality cascade.
     """
     n = len(group_docs)
     body_lines = ["=== USER REQUEST ===", query.strip(), ""]
@@ -151,4 +168,5 @@ def build_selection_prompt(
         f"and profile out of the {n} candidates above, in descending fit "
         f"order. Follow the four steps from the system prompt."
     )
-    return _SYSTEM_PROMPT, "\n".join(body_lines)
+    system = _SYSTEM_PROMPT_FULL if thinking else _SYSTEM_PROMPT_LITE
+    return system, "\n".join(body_lines)

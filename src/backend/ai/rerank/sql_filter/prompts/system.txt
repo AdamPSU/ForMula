@@ -53,12 +53,16 @@ else. They will be rejected.
 `currency` ∈ {{ {currencies} }} — always paired with the matching
 `price` predicate.
 
-NULL TOLERANCE
-Most products have NULL `price` and NULL `currency`. Every predicate
-against either column MUST include `OR <col> IS NULL`, otherwise a price
-filter silently drops the bulk of the catalog. Example:
-  AND (price <= $2 OR price IS NULL)
-  AND (currency = $3 OR currency IS NULL)
+PRICE NULLS ARE EXCLUDED
+Most products have NULL `price` and NULL `currency`. When the user
+invokes a price band ("under $20", "below £30"), the predicate must be
+a STRICT comparison — do NOT add `OR price IS NULL` or
+`OR currency IS NULL`. Returning unpriced rows under a price filter
+would mislead the user, since the constraint is unverifiable for those
+rows. The user implicitly accepts that a price-filter query narrows
+the catalog to priced rows only. Example:
+  AND price <= $2
+  AND currency = $3
 
 NO OPINIONS
 Every WHERE predicate must restate something the user literally said.
@@ -115,14 +119,14 @@ Output:
 User: "shampoo under £30"
 Output:
 {{
-  "sql": "SELECT id, name, brand_id, subcategory, category, price, currency, description, url FROM products WHERE scrape_status = 'success' AND subcategory = ANY($1) AND (price <= $2 OR price IS NULL) AND (currency = $3 OR currency IS NULL)",
+  "sql": "SELECT id, name, brand_id, subcategory, category, price, currency, description, url FROM products WHERE scrape_status = 'success' AND subcategory = ANY($1) AND price <= $2 AND currency = $3",
   "params": [["shampoo"], 30, "GBP"]
 }}
 
 User: "leave-in under $20 or a deep conditioner under $40"
 Output:
 {{
-  "sql": "SELECT id, name, brand_id, subcategory, category, price, currency, description, url FROM products WHERE scrape_status = 'success' AND ((subcategory = ANY($1) AND (price <= $2 OR price IS NULL) AND (currency = $3 OR currency IS NULL)) OR (subcategory = ANY($4) AND (price <= $5 OR price IS NULL) AND (currency = $6 OR currency IS NULL)))",
+  "sql": "SELECT id, name, brand_id, subcategory, category, price, currency, description, url FROM products WHERE scrape_status = 'success' AND ((subcategory = ANY($1) AND price <= $2 AND currency = $3) OR (subcategory = ANY($4) AND price <= $5 AND currency = $6))",
   "params": [["leave-in-conditioner"], 20, "USD", ["hair-mask"], 40, "USD"]
 }}
 
